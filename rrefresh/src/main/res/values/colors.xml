@@ -1,0 +1,260 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#000000</color>
+    <color name="white">#FFFFFF</color>
+    <color name="screen_lock_err_msg">#c82626</color>
+    <color name="feed_audio_left">#928662</color>
+    <color name="feed_audio_right">#555555</color>
+    <color name="feed_report_leftright">#232323</color>
+    <color name="feed_wish_reply_leftright">#232323</color>
+    <color name="feed_text_leftright">#000000</color>
+    <color name="feed_wish_leftright">#000000</color>
+    <color name="anni_text_date">#afaba0</color>
+    <color name="anni_text_red">#fd3d3a</color>
+    <color name="anni_title_text_left">#a0a0a0</color>
+    <color name="timeline_location_gray">#b0b0b0</color>
+    <color name="fb_login_blue">#4366b6</color>
+    <color name="relation_login_from">#e36c09</color>
+    <color name="game_rank_score_color">#ff8282</color>
+    <color name="game_rank_info_color">#caaa83</color>
+    <color name="default_circle_indicator_page_color">#00000000</color>
+    <color name="default_circle_indicator_stroke_color">#FFDDDDDD</color>
+    <color name="transparent">#ffffffff</color>
+    <color name="transparent_black">#00000000</color>
+    <color name="input_invite_code_hint">#c6c6c6</color>
+    <color name="help_hint_color">#ababab</color>
+    <color name="timeline_menu_title_color">#919191</color>
+    <color name="timeline_comments_female_color">#ff5164</color>
+    <color name="timeline_comments_male_color">#3cc5ff</color>
+    <color name="timeline_comments_time_color">#b9b9b9</color>
+    <color name="timeline_comments_item_bg_color">#fffbf7</color>
+    <color name="choose_data_color">#cecece</color>
+    <color name="simple_confirm_color">#474747</color>
+    <color name="feed_emotion_tip">#232323</color>
+    <color name="timeline_text_bg_male">#3cc5ff</color>
+    <color name="timeline_text_bg_female">#fd95a0</color>
+
+    <color name="calendar_active_month_bg">#ffffff</color>
+    <color name="calendar_bg">#ffffffff</color>
+    <color name="calendar_divider">#ffbababa</color>
+    <color name="calendar_text_inactive">#40778088</color>
+    <color name="calendar_text_active">#625e59</color>
+    <color name="calendar_cell_with_data">#ffe4e8</color>
+    <color name="calendar_cell_with_data_hover">#f5cdd3</color>
+    <color name="notification_hook_text_color">#9b9b9b</color>
+    <color name="house_chat_male_color">#78dcff</color>
+    <color name="house_chat_female_color">#ff8395</color>
+    <color name="more_comments">#606060</color>
+
+    <!--以下都是新版代码里用到的颜色-->
+    <color name="ab_bg_download">#28000000</color>
+    <color name="ab_chat_bar_send_btn">#15b1ff</color>
+    <color name="ab_common_button_pressed">#0a000000</color>
+    <color name="ab_common_button_normal">#00000000</color>
+    <color name="ab_chat_bar_multi_btn_selected">#11000000</color>
+    <color name="ab_chat_bar_text_hint_color">#bcadad</color>
+    <color name="ab_application_fragment_text_color">#474747</color>
+    <color name="ab_timeline_feed_new_comment_btn_bg">#fd3d3a</color>
+    <color name="ab_timeline_feed_delete_btn_color">#3575ac</color>
+    <color name="ab_timeline_feed_delete_desc_color">#ababab</color>
+    <color name="ab_timeline_post_feed_image_bg_color">#e9e5d9</color>
+    <color name="ab_timeline_post_feed_image_bg_hover_color">#ddd9ce</color>
+    <color name="ab_timeline_post_feed_location_color">#b7b9b9</color>
+    <color name="ab_theme_color_orange">#ff6339</color>
+    <color name="ab_theme_color_yellow">#fab600</color>
+    <color name="ab_theme_color_green">#41c337</color>
+    <color name="ab_theme_color_blue">#31bbf2</color>
+    <color name="ab_theme_color_pink">#f69db6</color>
+    <color name="ab_theme_color_purple">#7f70ca</color>
+    <color name="ab_theme_color_black">#292f3c</color>
+    <color name="ab_chat_edittext_bg_color">#ebeeef</color>
+
+    <color name="ab_theme_color_default_status_bar">#E81F38</color>
+
+    <color name="ab_common_item_pressed_color">#f1f1f1</color>
+
+    <color name="ab_home_pair_timestamp_color">#303030</color>
+    <color name="ab_timeline_album_text_color">#c3c3c3</color>
+    <color name="ab_wish_word_count_color">#8c9090</color>
+    <color name="common_action_bar_splitter">#e9e5d9</color>
+    <color name="ab_setting_break_releation_name_color">#625e59</color>
+    <color name="ab_setting_break_releation_describle_color">#afaba0</color>
+    <color name="ab_setting_split_line_color">#e9e5d9</color>
+    <color name="ab_home_pair_chat_panel_split_color">#dacfc3</color>
+    <color name="ab_container_text_color">#a39e9b</color>
+    <color name="ab_container_text_color_night">#a39e9b</color>
+    <color name="ab_common_red">#ff2741</color>
+    <color name="ab_common_transparent_red">#b2e62f17</color>
+
+    <color name="hover_gray_color">#dadada</color>
+    <color name="life_submission_hint_color">#bfc4ca</color>
+    <color name="life_comment_like_split_line_color">#edebe3</color>
+
+    <color name="ab_life_detail_content_bg_color">#fafaf9</color>
+    <color name="ab_life_detail_timestamp_bg">#f0e7dc</color>
+    <color name="ab_life_detail_timestamp_color">#c47b53</color>
+    <color name="ab_life_detail_content_color">#777e83</color>
+    <color name="ab_life_detail_price_range">#cc3500</color>
+    <color name="ab_life_detail_location_content_color">#a0a3a6</color>
+    <color name="ab_life_detail_action_item_line_color">#d19268</color>
+    <color name="ab_life_detail_action_text_color">#989c9f</color>
+    <color name="ab_life_detail_comment_refer_text_color">#a49f9a</color>
+
+    <color name="ab_login_register_text_color">#625e59</color>
+    <color name="ab_login_register_title_color">#afaba0</color>
+    <color name="ab_gray_btn_title_color">#878278</color>
+    <color name="ab_cover_notify_color">#f61b1b</color>
+    <color name="textcolor_recordingstate">#b1b1bb</color>
+
+    <color name="ab_chat_pair_text_container_bg">#ff877a</color>
+    <color name="ab_white_btn_title_color">#9e9e9e</color>
+
+    <color name="ab_life_common_text_color">#625e59</color>
+    <color name="ab_common_text_left_count_color">#898280</color>
+    <color name="activity_transparent">#aa000000</color>
+    <color name="activity_light_transparent">#33000000</color>
+    <color name="ab_life_feed_item_recommend_resone_color">#666666</color>
+    <color name="ab_life_feed_item_buttom_text_color">#adadad</color>
+    <color name="ab_life_feed_item_buttom_number_color">#cdcdcd</color>
+    <color name="ab_life_detail_v2_comment_text_color">#afaba0</color>
+
+    <color name="ab_chat_send_label_read_bg_color">#49df62</color>
+    <color name="ab_chat_send_label_delivered_bg_color">#63c5f3</color>
+    <color name="ab_chat_send_label_failed_bg_color">#ff5d8b</color>
+
+    <color name="ab_group_feed_des_color">#b7b1a9</color>
+    <color name="ab_group_mine_name_color">#c5ab89</color>
+    <color name="ab_life_talent_rank_tab_not_choose">#6d3d25</color>
+    <color name="ab_life_talent_rank_name_color">#c5ab89</color>
+    <color name="ab_life_talent_rank_1_3_color">#f76359</color>
+    <color name="ab_life_talent_rank_4_10_color">#feb45e</color>
+    <color name="ab_life_talent_rank_11_50_color">#d3b390</color>
+    <color name="ab_life_talent_rank_51_100_color">#b7b1a9</color>
+
+    <color name="ab_life_feed_title_shadow_v3_color">#7f7f7f</color>
+    <color name="ab_life_feed_love_count_choose_v3_color">#ff5164</color>
+    <color name="ab_life_feed_v3_image_bg_color">#ebebeb</color>
+    <color name="ab_life_feed_count_v3_color">#ef6237</color>
+    <color name="ab_life_group_count_color">#898290</color>
+    <color name="life_home_today_count_suffix_color">#f57666</color>
+    <color name="header_text_color">#FF6A7B</color>
+    <color name="ab_game_name_color">#8a8784</color>
+    <color name="ab_clock_statusbar_color">#a4ffef</color>
+
+    <color name="alarm_cycle_color">#e57e7a</color>
+    <color name="alarm_cycle_tran_color">#80e57e7a</color>
+    <color name="alarm_avatar_male_color">#819bb1</color>
+    <color name="alarm_time_day_color">#615454</color>
+    <color name="alarm_sleep_normal_color">#bebebe</color>
+    <color name="alarm_sleep_pressed_color">#959595</color>
+    <color name="alarm_clock_in_day_normal_color">#fca232</color>
+    <color name="alarm_clock_in_day_pressed_color">#e68d1f</color>
+    <color name="alarm_clock_in_night_normal_color">#68a8ff</color>
+    <color name="alarm_clock_in_night_pressed_color">#5e98e7</color>
+    <color name="alarm_record_my_start_color">#80ff9755</color>
+    <color name="alarm_record_my_end_color">#ffff9755</color>
+    <color name="alarm_record_my_bg_color">#4e566e</color>
+    <color name="alarm_record_peer_start_color">#8077c1ff</color>
+    <color name="alarm_record_peer_end_color">#ff77c1ff</color>
+    <color name="alarm_record_peer_bg_color">#4f6482</color>
+    <color name="alarm_record_date_color1">#7d92aa</color>
+    <color name="alarm_record_date_color2">#fefefe</color>
+    <color name="alarm_record_line_color">#f3a4a1</color>
+    <color name="alarm_record_my_sleep_time_color">#ff9755</color>
+    <color name="alarm_record_peer_sleep_time_color">#81c8ff</color>
+    <color name="alarm_record_bar_word_color">#959da9</color>
+    <color name="alarm_sleep_time_word_bg_color">#80ffffff</color>
+    <color name="alarm_sleep_time_word_color">#803e435b</color>
+    <color name="alarm_day_nav_bg_color">#b1ddff</color>
+    <color name="alarm_night_nav_bg_color">#221f48</color>
+    <color name="alarm_wakeup_share_text_color">#53280b</color>
+    <color name="alarm_record_share_time_color">#3b3b3b</color>
+    <color name="alarm_record_share_word_color">#c1c1c1</color>
+    <color name="ab_shop_home_bottom_bg_color">#e6ffffff</color>
+    <color name="ab_shop_home_bottom_line_color">#e2e2e2</color>
+    <color name="ab_shop_detail_hint_text_color">#b7b1a9</color>
+    <color name="city_choose_pressed_color">#fff9eb</color>
+    <color name="ab_imagepicker_buttom_text_color">#b7b1a9</color>
+    <color name="ab_pay_text_color">#b8b0a8</color>
+
+    <!--Material Design-->
+    <color name="primary">#ff2741</color>
+    <color name="primary_dark">#D32F2F</color>
+    <color name="primary_light">#FFCDD2</color>
+    <color name="accent">#4366b6</color>
+    <color name="primary_text">#212121</color>
+    <color name="secondary_text">#727272</color>
+
+    <color name="ripple_color_highlight">#ffffffff</color>
+    <color name="clickable_color_highlight_press">#77ffffff</color>
+    <color name="clickable_color_highlight_focus">#ccffffff</color>
+
+    <color name="ripple_color_highlight_dark">#ffbebebe</color>
+
+    <color name="ripple_color_highlight_rectangle">#77bebebe</color>
+    <color name="ripple_color">#11000000</color>
+    <color name="btn_common_green">#4cd964</color>
+    <color name="btn_common_green_pressed">#49c15e</color>
+    <color name="btn_common_green_disabled">#a5ecb1</color>
+    <color name="btn_common_green_disabled_text_color">#d5f6da</color>
+    <color name="btn_common_gray">#DFDAD4</color>
+    <color name="btn_common_gray_pressed">#c3beb9</color>
+    <color name="btn_common_white">#ffffff</color>
+
+    <color name="ab_punch_record_female_name_color">#ff8d9b</color>
+    <color name="ab_punch_record_male_name_color">#a8dff7</color>
+
+    <color name="toolbar_spilt_line">#CDCDCD</color>
+    <color name="spilt_line">#CFCFCF</color>
+
+    <color name="ab_shop_detail_male">#55b9ff</color>
+    <color name="ab_shop_detail_female">#ff55d9</color>
+
+    <color name="album_theme_color_0">#ef422b</color>
+    <color name="album_theme_color_1">#fab600</color>
+    <color name="album_theme_color_2">#ff6339</color>
+    <color name="album_theme_color_3">#ff5b73</color>
+    <color name="album_theme_color_4">#f69db6</color>
+    <color name="album_theme_color_5">#9e7bfb</color>
+    <color name="album_theme_color_6">#31bbf2</color>
+    <color name="album_theme_color_7">#01c39c</color>
+    <color name="album_theme_color_8">#41c337</color>
+    <color name="album_theme_color_9">#dbdbdb</color>
+    <color name="album_theme_color_10">#6180ea</color>
+    <color name="album_theme_color_11">#404a53</color>
+
+    <color name="default_clickable_color">#cccccc</color>
+    <color name="color_8290AF">#8290AF</color>
+    <color name="praise_item_default">#333333</color>
+    <color name="praise_item_selector_default">#cccccc</color>
+    <color name="praise_item">#8290AF</color>
+
+    <color name="anniversary_color_0">#fe8f7d</color>
+    <color name="anniversary_color_1">#f9aa4b</color>
+    <color name="anniversary_color_2">#ffeba3</color>
+    <color name="anniversary_color_3">#caf078</color>
+    <color name="anniversary_color_4">#61d8ce</color>
+    <color name="anniversary_color_5">#3bb4f3</color>
+    <color name="anniversary_color_6">#a494ff</color>
+    <color name="ripple_yellow_color_text">#a13c00</color>
+
+    <color name="pick_unable">#80ffffff</color>
+
+    <!-- 从这里开始遵循统一的命名规则，参见https://github.com/Blankj/AndroidStandardDevelop -->
+    <color name="background_primary">#f5f8fa</color>
+    <color name="background_thirdly">#e9e9ef</color>
+    <color name="text_primary">#1f1f21</color>
+    <color name="text_secondary">#82828c</color>
+    <color name="text_thirdly">#aeaeb8</color>
+    <color name="text_fourth">#4a4a52</color>
+    <color name="text_pink_primary">#FF6A87</color>
+    <color name="pink_primary">#ff2741</color>
+    <color name="text_pink_primary_unable">#FF97A3</color>
+    <color name="divider_primary">#dcdce2</color>
+    <color name="divider_secondary">#e6e6ed</color>
+    <color name="icon_primary">#525257</color>
+    <color name="icon_secondary">#82828c</color>
+    <color name="text_chat_audio">#db798d</color>
+    <color name="text_night_pressed">#a39e9b</color>
+    <color name="gray_shadow">#332b2b2b</color>
+</resources>
