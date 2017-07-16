@@ -15,7 +15,7 @@ public interface ILoadMoreViewFactory {
 
     interface ILoadMoreView {
 
-        void init(View.OnClickListener onClickListener);
+        void init(FootViewAdder footViewAdder, View.OnClickListener onClickListener);
 
         void showLoadMoreNormal();
 
@@ -24,6 +24,19 @@ public interface ILoadMoreViewFactory {
         void showLoadMoreError();
 
         void showLoadMoreCompleted();
+
+
+        void showLoading();
+
+        void setFooterVisibility(boolean isVisible);
+    }
+
+    interface FootViewAdder {
+
+        View addFootView(View view);
+
+        View addFootView(int layoutId);
+
     }
 
 }

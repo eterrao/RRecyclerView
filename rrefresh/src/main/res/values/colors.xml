@@ -257,4 +257,8 @@
     <color name="text_chat_audio">#db798d</color>
     <color name="text_night_pressed">#a39e9b</color>
     <color name="gray_shadow">#332b2b2b</color>
+
+    <color name="saffron">#F4B63E</color>
+    <color name="eggplant">#663D4E</color>
+    <color name="sienna">#EB6460</color>
 </resources>

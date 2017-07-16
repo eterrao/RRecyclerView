@@ -3,5 +3,7 @@
     <declare-styleable name="RRefreshView">
         <attr name="rrv_refresh_enabled" format="boolean" />
         <attr name="rrv_load_more_enabled" format="boolean" />
+        <attr name="rrv_heart_width" format="dimension" />
+        <attr name="rrv_heart_height" format="dimension" />
     </declare-styleable>
 </resources>

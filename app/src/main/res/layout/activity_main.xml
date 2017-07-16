@@ -7,12 +7,20 @@
     tools:context="tech.shutu.rrecyclerview.MainActivity">
 
     <com.welove520.rrefresh.view.RRefreshView
-        android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:id="@+id/pull_to_refresh"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:rrv_heart_height="30dp"
+        app:rrv_heart_width="35dp"
+        app:rrv_load_more_enabled="true">
 
-        <TextView
+        <android.support.v7.widget.RecyclerView
+            android:id="@+id/recycler_view"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:text="Hello World!" />
+            android:divider="@null"
+            android:dividerHeight="0dp"
+            android:fadingEdge="none" />
+
     </com.welove520.rrefresh.view.RRefreshView>
 </RelativeLayout>

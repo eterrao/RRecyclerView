@@ -1,25 +1,38 @@
 package com.welove520.rrefresh.view;
 
 import android.content.Context;
+import android.content.res.Resources;
 import android.content.res.TypedArray;
+import android.graphics.drawable.AnimationDrawable;
+import android.support.annotation.NonNull;
 import android.support.v4.view.MotionEventCompat;
 import android.support.v4.view.ViewCompat;
+import android.support.v7.widget.RecyclerView;
 import android.util.AttributeSet;
-import android.util.DisplayMetrics;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.view.animation.Animation;
 import android.view.animation.DecelerateInterpolator;
+import android.view.animation.Interpolator;
 import android.view.animation.Transformation;
 import android.widget.AbsListView;
+import android.widget.GridView;
+import android.widget.ListView;
 
 import com.welove520.rrefresh.R;
+import com.welove520.rrefresh.view.base.DefaultLoadMoreViewFooter;
+import com.welove520.rrefresh.view.base.IHeaderView;
+import com.welove520.rrefresh.view.base.OnRefreshListener;
+import com.welove520.rrefresh.view.handler.GridViewHandler;
+import com.welove520.rrefresh.view.handler.ListViewHandler;
+import com.welove520.rrefresh.view.handler.RecyclerViewHandler;
 
-import static android.support.v4.widget.ViewDragHelper.INVALID_POINTER;
+import org.xmlpull.v1.XmlPullParserException;
+
+import java.io.IOException;
 
 /**
  * Created by Raomengyang on 17-7-13.
@@ -31,56 +44,79 @@ import static android.support.v4.widget.ViewDragHelper.INVALID_POINTER;
 public class RRefreshView extends ViewGroup implements IRRefreshView {
 
     private static final String LOG_TAG = RRefreshView.class.getSimpleName();
-    private static final float DECELERATE_INTERPOLATION_FACTOR = 1f;
-    private static final float DRAG_RATE = .5f;
-    private static final int DRAG_MAX_DISTANCE = 165;
+    private static final int MAX_OFFSET_ANIMATION_DURATION = 700;
+    private static final int DRAG_MAX_DISTANCE = 80;
+    private static final int INVALID_POINTER = -1;
+    private static final float DECELERATE_INTERPOLATION_FACTOR = 2f;
+    private static final float DRAG_RATE = 0.5f;
+    private static final String TAG = RRefreshView.class.getSimpleName();
 
-    private static final int SCALE_DOWN_DURATION = 150;
+    private View mTarget;
+    private ViewGroup mHeaderView;
+    private ViewGroup mFooterView;
+    private IHeaderView mRefreshView;
 
-    private static final int ALPHA_ANIMATION_DURATION = 300;
-
-    private static final int ANIMATE_TO_TRIGGER_DURATION = 200;
-
-    private static final int ANIMATE_TO_START_DURATION = 200;
-
-    private IPtrViewFactory ptrViewFactory;
-    private IPtrViewFactory.IPtrView ptrView;
-    private View mTarget; // the target of the gesture
-    private View mHeaderView;
-    private View mFooterView;
-
-
-    private DecelerateInterpolator mDecelerateInterpolator;
+    private Interpolator mDecelerateInterpolator;
     private int mTouchSlop;
     private int mTotalDragDistance;
-    private boolean refreshEnabled = false;
-    private boolean loadMoreEnabled = false;
+    private float mCurrentDragPercent;
+    private int mCurrentOffsetTop;
     private boolean mRefreshing;
+    private int mActivePointerId;
     private boolean mIsBeingDragged;
-    private boolean mReturningToStart;
-
-    private float currentOffset;
-    private float totalOffset;
-
     private float mInitialMotionY;
-    private float mInitialDownY;
-    private int mActivePointerId = INVALID_POINTER;
-    protected int mOriginalOffsetTop;
-    private int mCurrentTargetOffsetTop;
+    private int mFrom;
+    private float mFromDragPercent;
     private boolean mNotify;
-    private boolean mScale;
-    protected int mFrom;
+    private OnRefreshListener mListener;
 
-    private Animation mScaleAnimation;
+    private int mTargetPaddingTop;
+    private int mTargetPaddingBottom;
+    private int mTargetPaddingRight;
+    private int mTargetPaddingLeft;
 
-    private Animation mScaleDownAnimation;
+    private int heartViewWidth = 140;
+    private int heartViewHeight = 120;
 
-    private Animation mAlphaStartAnimation;
+    private Animation mAnimateToStartPosition = new Animation() {
+        @Override
+        protected void applyTransformation(float interpolatedTime, Transformation t) {
+            moveToStart(interpolatedTime);
+        }
+    };
+    private Animation.AnimationListener mToStartListener = new Animation.AnimationListener() {
+        @Override
+        public void onAnimationStart(Animation animation) {
 
-    private Animation mAlphaMaxAnimation;
+        }
 
-    private Animation mScaleDownToStartAnimation;
+        @Override
+        public void onAnimationEnd(Animation animation) {
 
+        }
+
+        @Override
+        public void onAnimationRepeat(Animation animation) {
+            stopLoadingAnim();
+            mCurrentOffsetTop = mTarget.getTop();
+        }
+    };
+    private Animation mAnimateToCorrectPosition = new Animation() {
+        @Override
+        protected void applyTransformation(float interpolatedTime, Transformation t) {
+            int targetTop;
+            int endTarget = mTotalDragDistance;
+            targetTop = (mFrom + (int) ((endTarget - mFrom) * interpolatedTime));
+            int offset = targetTop - mTarget.getTop();
+
+            mCurrentDragPercent = mFromDragPercent - (mFromDragPercent - 1.0f) * interpolatedTime;
+            if (mRefreshView != null) {
+                mRefreshView.setPercent(mCurrentDragPercent, false);
+            }
+
+            setTargetOffsetTop(offset, false /* requires update */);
+        }
+    };
 
     public RRefreshView(Context context) {
         this(context, null);
@@ -95,291 +131,304 @@ public class RRefreshView extends ViewGroup implements IRRefreshView {
         init(context, attrs, defStyleAttr);
     }
 
+
     private void init(Context context, AttributeSet attrs, int defStyleAttr) {
         TypedArray a = context.obtainStyledAttributes(attrs, R.styleable.RRefreshView);
-        refreshEnabled = a.getBoolean(R.styleable.RRefreshView_rrv_refresh_enabled, true);
-        loadMoreEnabled = a.getBoolean(R.styleable.RRefreshView_rrv_load_more_enabled, true);
+        float width = a.getDimension(R.styleable.RRefreshView_rrv_heart_width, 35.0f);
+        float height = a.getDimension(R.styleable.RRefreshView_rrv_heart_height, 30.0f);
         a.recycle();
+        if (width > 0) {
+            heartViewWidth = (int) width;
+        }
+        if (height > 0) {
+            heartViewHeight = (int) height;
+        }
         mDecelerateInterpolator = new DecelerateInterpolator(DECELERATE_INTERPOLATION_FACTOR);
         mTouchSlop = ViewConfiguration.get(context).getScaledTouchSlop();
         mTotalDragDistance = Utils.convertDpToPixel(context, DRAG_MAX_DISTANCE);
 
+        mHeaderView = new ViewGroup(getContext()) {
+            @Override
+            protected void onLayout(boolean changed, int l, int t, int r, int b) {
+                Log.e(TAG, " HeaderView onLayout ====> ");
+                int height = getMeasuredHeight();
+                int width = getMeasuredWidth();
+                int left = getPaddingLeft();
+                int top = getPaddingTop();
+                int right = getPaddingRight();
+                int bottom = getPaddingBottom();
+                if (mRefreshView != null) {
+                    mRefreshView.setPercent(mCurrentDragPercent, false);
+                    float dragPercent = Math.min(1f, Math.abs(mCurrentDragPercent));
+                    mRefreshView.layout((width - heartViewWidth) / 2,
+                            0,
+                            (width + heartViewWidth) / 2,
+                            (int) ((heartViewHeight) * dragPercent));
+                    Log.e(TAG, " mCurrentOffsetTop = " + mCurrentOffsetTop + " ,dragPercent = " + dragPercent);
+                }
+            }
+        };
+        setRefreshStyle(0);
+
+        addView(mHeaderView);
+
         setWillNotDraw(false);
-        mDecelerateInterpolator = new DecelerateInterpolator(DECELERATE_INTERPOLATION_FACTOR);
-
-        final DisplayMetrics metrics = getResources().getDisplayMetrics();
-        createHeaderView();
         ViewCompat.setChildrenDrawingOrderEnabled(this, true);
-        // the absolute offset has to take into account that the circle starts at an offset
-        mSpinnerOffsetEnd = (int) (DRAG_MAX_DISTANCE * metrics.density);
-        mTotalDragDistance = mSpinnerOffsetEnd;
-        mOriginalOffsetTop = mCurrentTargetOffsetTop /*= -mCircleDiameter*/;
-        moveToStart(1.0f);
-
     }
 
-    private void createHeaderView() {
-        mHeaderView = LayoutInflater.from(getContext()).inflate(R.layout.layout_header_view, null);
-        mFooterView = LayoutInflater.from(getContext()).inflate(R.layout.layout_footer_view, null);
+    public AnimationDrawable getAnimation(Context context, int animResId) {
+        Resources res = context.getResources();
+        AnimationDrawable animDraw = null;
+        try {
+            animDraw = (AnimationDrawable)
+                    AnimationDrawable.createFromXml(res, res.getAnimation(animResId));
+        } catch (XmlPullParserException | IOException e) {
+            /* TODO Auto-generated catch block */
+            e.printStackTrace();
+        }
+        return animDraw;
+    }
+
+    public void setRefreshStyle(int type) {
+        setRefreshing(false);
+//        switch (type) {
+//            case STYLE_SUN:
+        mRefreshView = new HeartRefreshView(getContext());
+        AnimationDrawable animDraw = getAnimation(getContext(), R.drawable.welove_refresh_header_anim);
+        if (animDraw != null) {
+            ((HeartRefreshView) mRefreshView).setAnimDrawable(animDraw);
+        }
+//                break;
+//            default:
+//                throw new InvalidParameterException("Type does not exist");
+//        }
+//        mHeaderView.setImageDrawable(mRefreshView);
+
+
+        mHeaderView.addView((View) mRefreshView);
+    }
+
+    /**
+     * This method sets padding for the refresh (progress) view.
+     */
+    public void setRefreshViewPadding(int left, int top, int right, int bottom) {
+        mHeaderView.setPadding(left, top, right, bottom);
+    }
+
+    public int getTotalDragDistance() {
+        return mTotalDragDistance;
+    }
+
+
+    @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+        Log.e(TAG, " onMeasure = " + " ,widthMeasureSpec = " + widthMeasureSpec + " ,heightMeasureSpec = " + heightMeasureSpec);
+
+        ensureTarget();
+        if (mTarget == null) {
+            return;
+        }
+        widthMeasureSpec = MeasureSpec.makeMeasureSpec(getMeasuredWidth() - getPaddingLeft() - getPaddingRight(), MeasureSpec.EXACTLY);
+        heightMeasureSpec = MeasureSpec.makeMeasureSpec(getMeasuredHeight() - getPaddingLeft() - getPaddingRight(), MeasureSpec.EXACTLY);
+        mTarget.measure(widthMeasureSpec, heightMeasureSpec);
+        mHeaderView.measure(widthMeasureSpec, heightMeasureSpec);
+
     }
 
 
     @Override
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
-        ensureLayout();
+        ensureTarget();
+        if (mTarget == null) {
+            return;
+        }
+
+        int height = getMeasuredHeight();
+        int width = getMeasuredWidth();
+        int left = getPaddingLeft();
+        int top = getPaddingTop();
+        int right = getPaddingRight();
+        int bottom = getPaddingBottom();
+
+        mTarget.layout(left, top + mCurrentOffsetTop, left + width - right, top + height - bottom + mCurrentOffsetTop);
+        mHeaderView.layout(left, top, left + width - right, top + height - bottom);
+
+
     }
 
-    private void ensureLayout() {
-        final int width = getMeasuredWidth();
-        final int height = getMeasuredHeight();
-        if (getChildCount() == 0) {
+    private void ensureTarget() {
+        if (mTarget != null) {
             return;
         }
-        if (mTarget == null) {
-            ensureTarget();
+        if (getChildCount() > 0) {
+            for (int i = 0; i < getChildCount(); i++) {
+                View child = getChildAt(i);
+                if (child != mHeaderView) {
+                    mTarget = child;
+                    mTargetPaddingBottom = mTarget.getPaddingBottom();
+                    mTargetPaddingTop = mTarget.getPaddingTop();
+                    mTargetPaddingLeft = mTarget.getPaddingLeft();
+                    mTargetPaddingRight = mTarget.getPaddingRight();
+                }
+            }
         }
-        if (mTarget == null) {
-            return;
-        }
-        final View child = mTarget;
-        final int childLeft = getPaddingLeft();
-        final int childTop = getPaddingTop();
-        final int childWidth = width - getPaddingLeft() - getPaddingRight();
-        final int childHeight = height - getPaddingTop() - getPaddingBottom();
-        child.layout(childLeft, childTop, childLeft + childWidth, childTop + childHeight);
-        int circleWidth = mHeaderView.getMeasuredWidth();
-        int circleHeight = mHeaderView.getMeasuredHeight();
-        mHeaderView.layout((width / 2 - circleWidth / 2), mCurrentTargetOffsetTop,
-                (width / 2 + circleWidth / 2), mCurrentTargetOffsetTop + circleHeight);
     }
 
-    @Override
-    public void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-        if (mTarget == null) {
-            ensureTarget();
-        }
-        if (mTarget == null) {
-            return;
-        }
-        mTarget.measure(MeasureSpec.makeMeasureSpec(
-                getMeasuredWidth() - getPaddingLeft() - getPaddingRight(),
-                MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(
-                getMeasuredHeight() - getPaddingTop() - getPaddingBottom(), MeasureSpec.EXACTLY));
-        mHeaderView.measure(MeasureSpec.makeMeasureSpec(100, MeasureSpec.EXACTLY),
-                MeasureSpec.makeMeasureSpec(100, MeasureSpec.EXACTLY));
-    }
 
     @Override
     public boolean onInterceptTouchEvent(MotionEvent ev) {
-        ensureTarget();
 
-        final int action = MotionEventCompat.getActionMasked(ev);
-        int pointerIndex;
-
-        if (mReturningToStart && action == MotionEvent.ACTION_DOWN) {
-            mReturningToStart = false;
-        }
-
-        if (!isEnabled() || mReturningToStart || canChildScrollUp()
-                || mRefreshing /*|| mNestedScrollInProgress*/) {
-            // Fail fast if we're not in a state where a swipe is possible
+        if (!isEnabled() || canChildScrollUp() || mRefreshing) {
             return false;
         }
 
+        final int action = MotionEventCompat.getActionMasked(ev);
+
         switch (action) {
             case MotionEvent.ACTION_DOWN:
-                setTargetOffsetTopAndBottom(mOriginalOffsetTop - mHeaderView.getTop(), true);
-                mActivePointerId = ev.getPointerId(0);
+                setTargetOffsetTop(0, true);
+                mActivePointerId = MotionEventCompat.getPointerId(ev, 0);
                 mIsBeingDragged = false;
-
-                pointerIndex = ev.findPointerIndex(mActivePointerId);
-                if (pointerIndex < 0) {
+                final float initialMotionY = getMotionEventY(ev, mActivePointerId);
+                if (initialMotionY == -1) {
                     return false;
                 }
-                mInitialDownY = ev.getY(pointerIndex);
+                mInitialMotionY = initialMotionY;
                 break;
-
             case MotionEvent.ACTION_MOVE:
+                Log.e(TAG, " onInterceptTouchEvent ACTION_MOVE  ");
+
                 if (mActivePointerId == INVALID_POINTER) {
-//                    Log.e(LOG_TAG, "Got ACTION_MOVE event but don't have an active pointer id.");
                     return false;
                 }
-
-                pointerIndex = ev.findPointerIndex(mActivePointerId);
-                if (pointerIndex < 0) {
+                final float y = getMotionEventY(ev, mActivePointerId);
+                if (y == -1) {
                     return false;
                 }
-                final float y = ev.getY(pointerIndex);
-                startDragging(y);
+                final float yDiff = y - mInitialMotionY;
+                if (yDiff > mTouchSlop && !mIsBeingDragged) {
+                    mIsBeingDragged = true;
+                }
                 break;
-
-            case MotionEventCompat.ACTION_POINTER_UP:
-                onSecondaryPointerUp(ev);
-                break;
-
             case MotionEvent.ACTION_UP:
             case MotionEvent.ACTION_CANCEL:
                 mIsBeingDragged = false;
                 mActivePointerId = INVALID_POINTER;
+                break;
+            case MotionEventCompat.ACTION_POINTER_UP:
+                onSecondaryPointerUp(ev);
                 break;
         }
 
         return mIsBeingDragged;
     }
 
-    private void ensureTarget() {
-        // Don't bother getting the parent height if the parent hasn't been laid
-        // out yet.
-        if (mTarget == null) {
-            for (int i = 0; i < getChildCount(); i++) {
-                View child = getChildAt(i);
-                if (!child.equals(mHeaderView)) {
-                    mTarget = child;
-                    break;
-                }
-            }
-        }
-    }
-
-    void setTargetOffsetTopAndBottom(int offset, boolean requiresUpdate) {
-        mHeaderView.bringToFront();
-        ViewCompat.offsetTopAndBottom(mHeaderView, offset);
-        mCurrentTargetOffsetTop = mHeaderView.getTop();
-        if (requiresUpdate && android.os.Build.VERSION.SDK_INT < 11) {
-            invalidate();
-        }
-    }
-
-    private void startDragging(float y) {
-        final float yDiff = y - mInitialDownY;
-        if (yDiff > mTouchSlop && !mIsBeingDragged) {
-            mInitialMotionY = mInitialDownY + mTouchSlop;
-            mIsBeingDragged = true;
-//            mProgress.setAlpha(STARTING_PROGRESS_ALPHA);
-        }
-    }
-
     private void onSecondaryPointerUp(MotionEvent ev) {
         final int pointerIndex = MotionEventCompat.getActionIndex(ev);
-        final int pointerId = ev.getPointerId(pointerIndex);
+        final int pointerId = MotionEventCompat.getPointerId(ev, pointerIndex);
         if (pointerId == mActivePointerId) {
-            // This was our active pointer going up. Choose a new
-            // active pointer and adjust accordingly.
             final int newPointerIndex = pointerIndex == 0 ? 1 : 0;
-            mActivePointerId = ev.getPointerId(newPointerIndex);
+            mActivePointerId = MotionEventCompat.getPointerId(ev, newPointerIndex);
         }
+    }
+
+    private float getMotionEventY(MotionEvent ev, int activePointerId) {
+        final int index = MotionEventCompat.findPointerIndex(ev, activePointerId);
+        if (index < 0) {
+            return -1;
+        }
+        return MotionEventCompat.getY(ev, index);
     }
 
     @Override
-    public boolean onTouchEvent(MotionEvent ev) {
+    public boolean onTouchEvent(@NonNull MotionEvent ev) {
+
+        if (!mIsBeingDragged) {
+            return super.onTouchEvent(ev);
+        }
+
         final int action = MotionEventCompat.getActionMasked(ev);
-        int pointerIndex = -1;
-
-        if (mReturningToStart && action == MotionEvent.ACTION_DOWN) {
-            mReturningToStart = false;
-        }
-
-        if (!isEnabled() || mReturningToStart || canChildScrollUp()
-                || mRefreshing/* || mNestedScrollInProgress*/) {
-            // Fail fast if we're not in a state where a swipe is possible
-            return false;
-        }
 
         switch (action) {
-            case MotionEvent.ACTION_DOWN:
-                mActivePointerId = ev.getPointerId(0);
-                mIsBeingDragged = false;
-                break;
-
             case MotionEvent.ACTION_MOVE: {
-                pointerIndex = ev.findPointerIndex(mActivePointerId);
+                if (mRefreshView != null) {
+                    mRefreshView.requestLayout();
+                }
+                final int pointerIndex = MotionEventCompat.findPointerIndex(ev, mActivePointerId);
                 if (pointerIndex < 0) {
-                    Log.e(LOG_TAG, "Got ACTION_MOVE event but have an invalid active pointer id.");
                     return false;
                 }
 
-                final float y = ev.getY(pointerIndex);
-                startDragging(y);
-
-                if (mIsBeingDragged) {
-                    final float overscrollTop = (y - mInitialMotionY) * DRAG_RATE;
-                    if (overscrollTop > 0) {
-//                        moveSpinner(overscrollTop);
-                    } else {
-                        return false;
-                    }
-                }
-                break;
-            }
-            case MotionEventCompat.ACTION_POINTER_DOWN: {
-                pointerIndex = MotionEventCompat.getActionIndex(ev);
-                if (pointerIndex < 0) {
-                    Log.e(LOG_TAG,
-                            "Got ACTION_POINTER_DOWN event but have an invalid action index.");
+                final float y = MotionEventCompat.getY(ev, pointerIndex);
+                final float yDiff = y - mInitialMotionY;
+                final float scrollTop = yDiff * DRAG_RATE;
+                mCurrentDragPercent = scrollTop / mTotalDragDistance;
+                if (mCurrentDragPercent < 0) {
                     return false;
                 }
-                mActivePointerId = ev.getPointerId(pointerIndex);
+                float boundedDragPercent = Math.min(1f, Math.abs(mCurrentDragPercent));
+                float extraOS = Math.abs(scrollTop) - mTotalDragDistance;
+                float slingshotDist = mTotalDragDistance;
+                float tensionSlingshotPercent = Math.max(0,
+                        Math.min(extraOS, slingshotDist * 2) / slingshotDist);
+                float tensionPercent = (float) ((tensionSlingshotPercent / 4) - Math.pow(
+                        (tensionSlingshotPercent / 4), 2)) * 2f;
+                float extraMove = (slingshotDist) * tensionPercent / 2;
+                int targetY = (int) ((slingshotDist * boundedDragPercent) + extraMove);
+                if (mRefreshView != null) {
+                    mRefreshView.setPercent(mCurrentDragPercent, true);
+                }
+                setTargetOffsetTop(targetY - mCurrentOffsetTop, true);
                 break;
             }
-
+            case MotionEventCompat.ACTION_POINTER_DOWN:
+                final int index = MotionEventCompat.getActionIndex(ev);
+                mActivePointerId = MotionEventCompat.getPointerId(ev, index);
+                break;
             case MotionEventCompat.ACTION_POINTER_UP:
                 onSecondaryPointerUp(ev);
                 break;
-
-            case MotionEvent.ACTION_UP: {
-                pointerIndex = ev.findPointerIndex(mActivePointerId);
-                if (pointerIndex < 0) {
-                    Log.e(LOG_TAG, "Got ACTION_UP event but don't have an active pointer id.");
+            case MotionEvent.ACTION_UP:
+            case MotionEvent.ACTION_CANCEL: {
+                if (mActivePointerId == INVALID_POINTER) {
                     return false;
                 }
-
-                if (mIsBeingDragged) {
-                    final float y = ev.getY(pointerIndex);
-                    final float overscrollTop = (y - mInitialMotionY) * DRAG_RATE;
-                    mIsBeingDragged = false;
-                    finishSpinner(overscrollTop);
+                final int pointerIndex = MotionEventCompat.findPointerIndex(ev, mActivePointerId);
+                final float y = MotionEventCompat.getY(ev, pointerIndex);
+                final float overScrollTop = (y - mInitialMotionY) * DRAG_RATE;
+                mIsBeingDragged = false;
+                if (overScrollTop > mTotalDragDistance) {
+                    setRefreshing(true, true);
+                } else {
+                    mRefreshing = false;
+                    animateOffsetToStartPosition();
                 }
                 mActivePointerId = INVALID_POINTER;
                 return false;
             }
-            case MotionEvent.ACTION_CANCEL:
-                return false;
         }
 
         return true;
     }
 
-    private void finishSpinner(float overscrollTop) {
-        if (overscrollTop > mTotalDragDistance) {
-            setRefreshing(true, true /* notify */);
-        } else {
-            // cancel refresh
-            mRefreshing = false;
-//            mProgress.setStartEndTrim(0f, 0f);
-            Animation.AnimationListener listener = null;
-            if (!mScale) {
-                listener = new Animation.AnimationListener() {
 
-                    @Override
-                    public void onAnimationStart(Animation animation) {
-                    }
+    private void moveToStart(float interpolatedTime) {
+        int targetTop = mFrom - (int) (mFrom * interpolatedTime);
+        float targetPercent = mFromDragPercent * (1.0f - interpolatedTime);
+        int offset = targetTop - mTarget.getTop();
 
-                    @Override
-                    public void onAnimationEnd(Animation animation) {
-                        if (!mScale) {
-                            startScaleDownAnimation(null);
-                        }
-                    }
+        mCurrentDragPercent = targetPercent;
+        if (mRefreshView != null) {
+            mRefreshView.setPercent(mCurrentDragPercent, true);
+        }
+        mTarget.setPadding(mTargetPaddingLeft, mTargetPaddingTop, mTargetPaddingRight, mTargetPaddingBottom + targetTop);
+        setTargetOffsetTop(offset, false);
+    }
 
-                    @Override
-                    public void onAnimationRepeat(Animation animation) {
-                    }
-
-                };
-            }
-            animateOffsetToStartPosition(mCurrentTargetOffsetTop, listener);
-//            mProgress.showArrow(false);
+    public void setRefreshing(boolean refreshing) {
+        if (mRefreshing != refreshing) {
+            setRefreshing(refreshing, false /* notify */);
         }
     }
 
@@ -389,243 +438,75 @@ public class RRefreshView extends ViewGroup implements IRRefreshView {
             ensureTarget();
             mRefreshing = refreshing;
             if (mRefreshing) {
-                animateOffsetToCorrectPosition(mCurrentTargetOffsetTop, mRefreshListener);
-            } else {
-                startScaleDownAnimation(mRefreshListener);
-            }
-        }
-    }
-
-    private OnRefreshListener mListener;
-    private Animation.AnimationListener mRefreshListener = new Animation.AnimationListener() {
-        @Override
-        public void onAnimationStart(Animation animation) {
-        }
-
-        @Override
-        public void onAnimationRepeat(Animation animation) {
-        }
-
-        @Override
-        public void onAnimationEnd(Animation animation) {
-            if (mRefreshing) {
-                // Make sure the progress view is fully visible
-//                mProgress.setAlpha(MAX_ALPHA);
-//                mProgress.start();
-                if (mNotify) {
-                    if (mListener != null) {
-                        mListener.onRefresh();
-                    }
+                if (mRefreshView != null) {
+                    mRefreshView.setPercent(1f, true);
                 }
-                mCurrentTargetOffsetTop = mHeaderView.getTop();
+                animateOffsetToCorrectPosition();
             } else {
-                reset();
+                animateOffsetToStartPosition();
             }
         }
-    };
-
-    void reset() {
-        mHeaderView.clearAnimation();
-//        mProgress.stop();
-        mHeaderView.setVisibility(View.GONE);
-        // Return the circle to its start position
-        if (mScale) {
-//            setAnimationProgress(0 /* animation complete and view is hidden */);
-        } else {
-            setTargetOffsetTopAndBottom(mOriginalOffsetTop - mCurrentTargetOffsetTop,
-                    true /* requires update */);
-        }
-        mCurrentTargetOffsetTop = mHeaderView.getTop();
     }
 
+    private void animateOffsetToStartPosition() {
+        mFrom = mCurrentOffsetTop;
+        mFromDragPercent = mCurrentDragPercent;
+        long animationDuration = Math.abs((long) (MAX_OFFSET_ANIMATION_DURATION * mFromDragPercent));
 
-    void startScaleDownAnimation(Animation.AnimationListener listener) {
-        mScaleDownAnimation = new Animation() {
-            @Override
-            public void applyTransformation(float interpolatedTime, Transformation t) {
-//                setAnimationProgress(1 - interpolatedTime);
-            }
-        };
-        mScaleDownAnimation.setDuration(SCALE_DOWN_DURATION);
-//        mHeaderView.setAnimationListener(listener);
+        mAnimateToStartPosition.reset();
+        mAnimateToStartPosition.setDuration(animationDuration);
+        mAnimateToStartPosition.setInterpolator(mDecelerateInterpolator);
+        mAnimateToStartPosition.setAnimationListener(mToStartListener);
         mHeaderView.clearAnimation();
-        mHeaderView.startAnimation(mScaleDownAnimation);
+        mHeaderView.startAnimation(mAnimateToStartPosition);
     }
 
-    private void animateOffsetToCorrectPosition(int from, Animation.AnimationListener listener) {
-        mFrom = from;
+    private void animateOffsetToCorrectPosition() {
+        mFrom = mCurrentOffsetTop;
+        mFromDragPercent = mCurrentDragPercent;
+
         mAnimateToCorrectPosition.reset();
-        mAnimateToCorrectPosition.setDuration(ANIMATE_TO_TRIGGER_DURATION);
+        mAnimateToCorrectPosition.setDuration(MAX_OFFSET_ANIMATION_DURATION);
         mAnimateToCorrectPosition.setInterpolator(mDecelerateInterpolator);
-        if (listener != null) {
-//            mHeaderView.setAnimationListener(listener);
-        }
         mHeaderView.clearAnimation();
         mHeaderView.startAnimation(mAnimateToCorrectPosition);
-    }
 
-    private void animateOffsetToStartPosition(int from, Animation.AnimationListener listener) {
-        if (mScale) {
-            // Scale the item back down
-            startScaleDownReturnToStartAnimation(from, listener);
+        if (mRefreshing) {
+            startLoadingAnim();
+            if (mNotify) {
+                if (mListener != null) {
+                    mListener.onRefresh();
+                }
+            }
         } else {
-            mFrom = from;
-            mAnimateToStartPosition.reset();
-            mAnimateToStartPosition.setDuration(ANIMATE_TO_START_DURATION);
-            mAnimateToStartPosition.setInterpolator(mDecelerateInterpolator);
-            if (listener != null) {
-//                mHeaderView.setAnimationListener(listener);
+            stopLoadingAnim();
+            animateOffsetToStartPosition();
+        }
+        mCurrentOffsetTop = mTarget.getTop();
+        mTarget.setPadding(mTargetPaddingLeft, mTargetPaddingTop, mTargetPaddingRight, mTotalDragDistance);
+    }
+
+    private void stopLoadingAnim() {
+        if (mRefreshView != null) {
+            mRefreshView.stop();
+        }
+    }
+
+    private void startLoadingAnim() {
+        if (mRefreshView != null) {
+            if (!mRefreshView.isRunning()) {
+                mRefreshView.start();
             }
-            mHeaderView.clearAnimation();
-            mHeaderView.startAnimation(mAnimateToStartPosition);
         }
     }
 
-    private int mSpinnerOffsetEnd;
-    private final Animation mAnimateToCorrectPosition = new Animation() {
-        @Override
-        public void applyTransformation(float interpolatedTime, Transformation t) {
-            int targetTop = 0;
-            int endTarget = 0;
-            endTarget = mSpinnerOffsetEnd;
-            targetTop = (mFrom + (int) ((endTarget - mFrom) * interpolatedTime));
-            int offset = targetTop - mHeaderView.getTop();
-            setTargetOffsetTopAndBottom(offset, false /* requires update */);
-//            mProgress.setArrowScale(1 - interpolatedTime);
+    private void setTargetOffsetTop(int offset, boolean requiresUpdate) {
+        Log.e(TAG, " offset ===> " + offset);
+        mTarget.offsetTopAndBottom(offset);
+        mCurrentOffsetTop = mTarget.getTop();
+        if (requiresUpdate && android.os.Build.VERSION.SDK_INT < 11) {
+            invalidate();
         }
-    };
-
-    void moveToStart(float interpolatedTime) {
-        int targetTop = 0;
-        targetTop = (mFrom + (int) ((mOriginalOffsetTop - mFrom) * interpolatedTime));
-        int offset = targetTop - mHeaderView.getTop();
-        setTargetOffsetTopAndBottom(offset, false /* requires update */);
-    }
-
-    private final Animation mAnimateToStartPosition = new Animation() {
-        @Override
-        public void applyTransformation(float interpolatedTime, Transformation t) {
-            moveToStart(interpolatedTime);
-        }
-    };
-
-    private void startScaleDownReturnToStartAnimation(int from,
-                                                      Animation.AnimationListener listener) {
-        mFrom = from;
-//        if (isAlphaUsedForScale()) {
-//            mStartingScale = mProgress.getAlpha();
-//        } else {
-//            mStartingScale = ViewCompat.getScaleX(mHeaderView);
-//        }
-        mScaleDownToStartAnimation = new Animation() {
-            @Override
-            public void applyTransformation(float interpolatedTime, Transformation t) {
-//                float targetScale = (mStartingScale + (-mStartingScale  * interpolatedTime));
-//                setAnimationProgress(targetScale);
-                moveToStart(interpolatedTime);
-            }
-        };
-        mScaleDownToStartAnimation.setDuration(SCALE_DOWN_DURATION);
-//        if (listener != null) {
-//            mHeaderView.setAnimationListener(listener);
-//        }
-        mHeaderView.clearAnimation();
-        mHeaderView.startAnimation(mScaleDownToStartAnimation);
-    }
-
-    /**
-     * Set the listener to be notified when a refresh is triggered via the swipe
-     * gesture.
-     */
-    public void setOnRefreshListener(OnRefreshListener listener) {
-        mListener = listener;
-    }
-
-    /**
-     * Pre API 11, alpha is used to make the progress circle appear instead of scale.
-     */
-    private boolean isAlphaUsedForScale() {
-        return android.os.Build.VERSION.SDK_INT < 11;
-    }
-
-
-//    @Override
-//    public boolean dispatchTouchEvent(MotionEvent ev) {
-//        if (!isEnabled() || mContent == null || mHeaderView == null) {
-//            return dispatchTouchEventSupper(ev);
-//        }
-//        int action = ev.getAction();
-//        switch (action) {
-//            case MotionEvent.ACTION_UP:
-//            case MotionEvent.ACTION_CANCEL:
-//                mPtrIndicator.onRelease();
-//                if (mPtrIndicator.hasLeftStartPosition()) {
-//                    if (DEBUG) {
-//                        PtrCLog.d(LOG_TAG, "call onRelease when user release");
-//                    }
-//                    onRelease(false);
-//                    if (mPtrIndicator.hasMovedAfterPressedDown()) {
-//                        sendCancelEvent();
-//                        return true;
-//                    }
-//                    return dispatchTouchEventSupper(ev);
-//                } else {
-//                    return dispatchTouchEventSupper(ev);
-//                }
-//
-//            case MotionEvent.ACTION_DOWN:
-//                mHasSendCancelEvent = false;
-//                mPtrIndicator.onPressDown(ev.getX(), ev.getY());
-//
-//                mScrollChecker.abortIfWorking();
-//
-//                mPreventForHorizontal = false;
-//                // The cancel event will be sent once the position is moved.
-//                // So let the event pass to children.
-//                // fix #93, #102
-//                dispatchTouchEventSupper(ev);
-//                return true;
-//
-//            case MotionEvent.ACTION_MOVE:
-//                mLastMoveEvent = ev;
-//                mPtrIndicator.onMove(ev.getX(), ev.getY());
-//                float offsetX = mPtrIndicator.getOffsetX();
-//                float offsetY = mPtrIndicator.getOffsetY();
-//
-//                if (mDisableWhenHorizontalMove && !mPreventForHorizontal && (Math.abs(offsetX) > mPagingTouchSlop && Math.abs(offsetX) > Math.abs(offsetY))) {
-//                    if (mPtrIndicator.isInStartPosition()) {
-//                        mPreventForHorizontal = true;
-//                    }
-//                }
-//                if (mPreventForHorizontal) {
-//                    return dispatchTouchEventSupper(ev);
-//                }
-//
-//                boolean moveDown = offsetY > 0;
-//                boolean moveUp = !moveDown;
-//                boolean canMoveUp = mPtrIndicator.hasLeftStartPosition();
-//
-//                if (DEBUG) {
-//                    boolean canMoveDown = mPtrHandler != null && mPtrHandler.checkCanDoRefresh(this, mContent, mHeaderView);
-//                    PtrCLog.v(LOG_TAG, "ACTION_MOVE: offsetY:%s, currentPos: %s, moveUp: %s, canMoveUp: %s, moveDown: %s: canMoveDown: %s", offsetY, mPtrIndicator.getCurrentPosY(), moveUp, canMoveUp, moveDown, canMoveDown);
-//                }
-//
-//                // disable move when header not reach top
-//                if (moveDown && mPtrHandler != null && !mPtrHandler.checkCanDoRefresh(this, mContent, mHeaderView)) {
-//                    return dispatchTouchEventSupper(ev);
-//                }
-//
-//                if ((moveUp && canMoveUp) || moveDown) {
-//                    movePos(offsetY);
-//                    return true;
-//                }
-//        }
-//        return dispatchTouchEventSupper(ev);
-//    }
-
-
-    public boolean dispatchTouchEventSupper(MotionEvent e) {
-        return super.dispatchTouchEvent(e);
     }
 
     private boolean canChildScrollUp() {
@@ -645,33 +526,168 @@ public class RRefreshView extends ViewGroup implements IRRefreshView {
 
     @Override
     public void setHeaderView(IPtrViewFactory ptrViewFactory) {
-        this.ptrViewFactory = ptrViewFactory;
-        if (ptrViewFactory != null) {
-            ptrView = ptrViewFactory.createPtrView();
-        }
+//        mHeaderView = LayoutInflater.from(getContext()).inflate()
+    }
+
+
+
+    @Override
+    public void setNetworkStatus(int status) {
+
+    }
+
+    public void setOnRefreshListener(OnRefreshListener onRefreshListener) {
+        this.mListener = onRefreshListener;
+    }
+
+
+    private boolean isLoadingMore = false;
+    private boolean isAutoLoadMoreEnable = true;
+    private boolean isLoadMoreEnable = false;
+    private boolean hasInitLoadMoreView = false;
+
+    private ILoadMoreViewFactory loadMoreViewFactory;
+    private ILoadMoreViewFactory.ILoadMoreView mLoadMoreView;
+
+    private LoadMoreHandler mLoadMoreHandler;
+
+    private View mContentView;
+
+    public void setAutoLoadMoreEnable(boolean isAutoLoadMoreEnable) {
+        this.isAutoLoadMoreEnable = isAutoLoadMoreEnable;
     }
 
     @Override
-    public void setFooterView(ILoadMoreViewFactory loadMoreViewFactory) {
+    public void setFooterView(ILoadMoreViewFactory factory) {
+        if (null == factory || (null != loadMoreViewFactory && loadMoreViewFactory == factory)) {
+            return;
+        }
+
+        loadMoreViewFactory = factory;
+
+        if (hasInitLoadMoreView) {
+            mLoadMoreHandler.removeFooter();
+            mLoadMoreView = loadMoreViewFactory.createLoadMoreView();
+            hasInitLoadMoreView = mLoadMoreHandler.handleSetAdapter(mContentView, mLoadMoreView,
+                    onClickLoadMoreListener);
+            if (!isLoadMoreEnable) {
+                mLoadMoreHandler.removeFooter();
+            }
+        }
 
     }
 
-    public void refresh() {
 
+    public void setLoadMoreEnable(boolean loadMoreEnable) {
+        if (this.isLoadMoreEnable == loadMoreEnable) {
+            return;
+        }
+        this.isLoadMoreEnable = loadMoreEnable;
+        if (!hasInitLoadMoreView && isLoadMoreEnable) {
+            mContentView = getContentView();
+            if (null == loadMoreViewFactory) {
+                loadMoreViewFactory = new DefaultLoadMoreViewFooter();
+            }
+            mLoadMoreView = loadMoreViewFactory.createLoadMoreView();
+
+            if (null == mLoadMoreHandler) {
+                if (mContentView instanceof GridView) {
+                    mLoadMoreHandler = new GridViewHandler();
+                } else if (mContentView instanceof AbsListView) {
+                    mLoadMoreHandler = new ListViewHandler();
+                } else if (mContentView instanceof RecyclerView) {
+                    mLoadMoreHandler = new RecyclerViewHandler();
+                }
+            }
+
+            if (null == mLoadMoreHandler) {
+                throw new IllegalStateException("unSupported contentView !");
+            }
+
+            hasInitLoadMoreView = mLoadMoreHandler.handleSetAdapter(mContentView, mLoadMoreView,
+                    onClickLoadMoreListener);
+            mLoadMoreHandler.setOnScrollBottomListener(mContentView, onScrollBottomListener);
+            return;
+        }
+
+        if (hasInitLoadMoreView) {
+            if (isLoadMoreEnable) {
+                mLoadMoreHandler.addFooter();
+            } else {
+                mLoadMoreHandler.removeFooter();
+            }
+        }
     }
 
-    public void loadMore() {
-
+    private View getContentView() {
+        if (getChildCount() > 0) {
+            for (int i = 0; i < getChildCount(); i++) {
+                View child = getChildAt(i);
+                if (child instanceof RecyclerView) {
+                    return child;
+                } else if (child instanceof ListView) {
+                    return child;
+                } else if (child instanceof GridView) {
+                    return child;
+                }
+            }
+        }
+        return null;
     }
 
-    /**
-     * Classes that wish to be notified when the swipe gesture correctly
-     * triggers a refresh should implement this interface.
-     */
-    public interface OnRefreshListener {
-        /**
-         * Called when a swipe gesture triggers a refresh.
-         */
-        void onRefresh();
+    public boolean isLoadMoreEnable() {
+        return isLoadMoreEnable;
+    }
+
+    private OnScrollBottomListener onScrollBottomListener = new OnScrollBottomListener() {
+        @Override
+        public void onScorllBootom() {
+            if (isAutoLoadMoreEnable && isLoadMoreEnable && !isLoadingMore()) {
+                // can check network here
+                loadMore();
+            }
+        }
+    };
+
+    private OnClickListener onClickLoadMoreListener = new OnClickListener() {
+
+        @Override
+        public void onClick(View v) {
+            if (isLoadMoreEnable && !isLoadingMore()) {
+                loadMore();
+            }
+        }
+    };
+
+    void loadMore() {
+        isLoadingMore = true;
+        mLoadMoreView.showLoading();
+        if (mOnLoadMoreListener != null) {
+            mOnLoadMoreListener.onLoadMore();
+        }
+    }
+
+    public void loadMoreComplete(boolean hasMore) {
+        isLoadingMore = false;
+        isLoadMoreEnable = hasMore;
+        if (hasMore) {
+            mLoadMoreView.showLoadMoreNormal();
+        } else {
+            setNoMoreData();
+        }
+    }
+
+    public void setNoMoreData() {
+        mLoadMoreView.showLoadMoreNormal();
+    }
+
+    public boolean isLoadingMore() {
+        return isLoadingMore;
+    }
+
+    OnLoadMoreListener mOnLoadMoreListener;
+
+    public void setOnLoadMoreListener(OnLoadMoreListener loadMoreListener) {
+        this.mOnLoadMoreListener = loadMoreListener;
     }
 }

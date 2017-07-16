@@ -12,4 +12,6 @@ interface IRRefreshView {
     void setHeaderView(IPtrViewFactory ptrViewFactory);
 
     void setFooterView(ILoadMoreViewFactory loadMoreViewFactory);
+
+    void setNetworkStatus(int status);
 }
