@@ -23,6 +23,7 @@ public class MainActivity extends AppCompatActivity {
 
     public static final int REFRESH_DELAY = 2000;
     public static final String KEY_ICON = "icon";
+    
     public static final String KEY_COLOR = "color";
 
     private RRefreshView mPullToRefreshView;
