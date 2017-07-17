@@ -25,9 +25,8 @@ import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemSelectedListener;
 import android.widget.ListAdapter;
 
-import com.welove520.rrefresh.view.ILoadMoreViewFactory;
-import com.welove520.rrefresh.view.LoadMoreHandler;
-import com.welove520.rrefresh.view.OnScrollBottomListener;
+import com.welove520.rrefresh.view.base.ILoadMoreViewFactory;
+import com.welove520.rrefresh.view.listener.OnScrollBottomListener;
 import com.welove520.rrefresh.view.base.GridViewWithHeaderAndFooter;
 
 public class GridViewHandler implements LoadMoreHandler {

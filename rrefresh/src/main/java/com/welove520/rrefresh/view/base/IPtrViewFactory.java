@@ -1,4 +1,4 @@
-package com.welove520.rrefresh.view;
+package com.welove520.rrefresh.view.base;
 
 /**
  * Created by Raomengyang on 17-7-14.

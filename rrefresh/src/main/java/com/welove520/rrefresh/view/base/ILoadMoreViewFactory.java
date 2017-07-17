@@ -1,4 +1,4 @@
-package com.welove520.rrefresh.view;
+package com.welove520.rrefresh.view.base;
 
 import android.view.View;
 
@@ -24,7 +24,6 @@ public interface ILoadMoreViewFactory {
         void showLoadMoreError();
 
         void showLoadMoreCompleted();
-
 
         void showLoading();
 

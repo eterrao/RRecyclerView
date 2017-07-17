@@ -1,4 +1,4 @@
-package com.welove520.rrefresh.view;
+package com.welove520.rrefresh.view.base;
 
 import android.content.Context;
 import android.util.AttributeSet;

@@ -10,9 +10,8 @@ import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemSelectedListener;
 import android.widget.ListView;
 
-import com.welove520.rrefresh.view.ILoadMoreViewFactory;
-import com.welove520.rrefresh.view.LoadMoreHandler;
-import com.welove520.rrefresh.view.OnScrollBottomListener;
+import com.welove520.rrefresh.view.base.ILoadMoreViewFactory;
+import com.welove520.rrefresh.view.listener.OnScrollBottomListener;
 
 public class ListViewHandler implements LoadMoreHandler {
 
@@ -121,6 +120,4 @@ public class ListViewHandler implements LoadMoreHandler {
 
         }
     }
-
-    ;
 }

@@ -1308,6 +1308,7 @@
     <string name="life_clean_news_failed">清除消息失败</string>
     <string name="life_refres_single_feed_failed">刷新失败</string>
     <string name="life_refres_single_feed_success">刷新成功</string>
+    <string name="life_refres_single_feed_release_to_refresh">松开进行刷新</string>
     <string name="life_refres_single_feed_delete_confrim">确认删除本条记录吗？</string>
     <string name="group_feed_delete_confrim">帖子被删除之后无法恢复，确认删除吗？</string>
     <string name="group_feed_tell_confrim">确定把这篇帖子发送给对方吗？</string>

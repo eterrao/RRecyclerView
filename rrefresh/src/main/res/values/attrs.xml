@@ -1,9 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <declare-styleable name="RRefreshView">
-        <attr name="rrv_refresh_enabled" format="boolean" />
-        <attr name="rrv_load_more_enabled" format="boolean" />
-        <attr name="rrv_heart_width" format="dimension" />
-        <attr name="rrv_heart_height" format="dimension" />
+        <!--<attr name="rrv_refresh_enabled" format="boolean" />-->
+        <!--<attr name="rrv_load_more_enabled" format="boolean" />-->
     </declare-styleable>
 </resources>

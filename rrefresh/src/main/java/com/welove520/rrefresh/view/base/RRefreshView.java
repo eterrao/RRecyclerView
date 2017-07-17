@@ -1,9 +1,7 @@
-package com.welove520.rrefresh.view;
+package com.welove520.rrefresh.view.base;
 
 import android.content.Context;
-import android.content.res.Resources;
 import android.content.res.TypedArray;
-import android.graphics.drawable.AnimationDrawable;
 import android.support.annotation.NonNull;
 import android.support.v4.view.MotionEventCompat;
 import android.support.v4.view.ViewCompat;
@@ -23,16 +21,14 @@ import android.widget.GridView;
 import android.widget.ListView;
 
 import com.welove520.rrefresh.R;
-import com.welove520.rrefresh.view.base.DefaultLoadMoreViewFooter;
-import com.welove520.rrefresh.view.base.IHeaderView;
-import com.welove520.rrefresh.view.base.OnRefreshListener;
+import com.welove520.rrefresh.view.Utils;
+import com.welove520.rrefresh.view.listener.OnRefreshListener;
 import com.welove520.rrefresh.view.handler.GridViewHandler;
 import com.welove520.rrefresh.view.handler.ListViewHandler;
+import com.welove520.rrefresh.view.handler.LoadMoreHandler;
 import com.welove520.rrefresh.view.handler.RecyclerViewHandler;
-
-import org.xmlpull.v1.XmlPullParserException;
-
-import java.io.IOException;
+import com.welove520.rrefresh.view.listener.OnLoadMoreListener;
+import com.welove520.rrefresh.view.listener.OnScrollBottomListener;
 
 /**
  * Created by Raomengyang on 17-7-13.
@@ -43,13 +39,12 @@ import java.io.IOException;
 
 public class RRefreshView extends ViewGroup implements IRRefreshView {
 
-    private static final String LOG_TAG = RRefreshView.class.getSimpleName();
+    private static final String TAG = RRefreshView.class.getSimpleName();
     private static final int MAX_OFFSET_ANIMATION_DURATION = 700;
     private static final int DRAG_MAX_DISTANCE = 80;
     private static final int INVALID_POINTER = -1;
     private static final float DECELERATE_INTERPOLATION_FACTOR = 2f;
     private static final float DRAG_RATE = 0.5f;
-    private static final String TAG = RRefreshView.class.getSimpleName();
 
     private View mTarget;
     private ViewGroup mHeaderView;
@@ -75,8 +70,16 @@ public class RRefreshView extends ViewGroup implements IRRefreshView {
     private int mTargetPaddingRight;
     private int mTargetPaddingLeft;
 
-    private int heartViewWidth = 140;
-    private int heartViewHeight = 120;
+    private boolean isLoadingMore = false;
+    private boolean isAutoLoadMoreEnable = false;
+    private boolean isLoadMoreEnable = false;
+    private boolean hasInitLoadMoreView = false;
+
+    private ILoadMoreViewFactory loadMoreViewFactory;
+    private ILoadMoreViewFactory.ILoadMoreView mLoadMoreView;
+    private LoadMoreHandler mLoadMoreHandler;
+    private View mContentView;
+
 
     private Animation mAnimateToStartPosition = new Animation() {
         @Override
@@ -97,7 +100,6 @@ public class RRefreshView extends ViewGroup implements IRRefreshView {
 
         @Override
         public void onAnimationRepeat(Animation animation) {
-            stopLoadingAnim();
             mCurrentOffsetTop = mTarget.getTop();
         }
     };
@@ -134,15 +136,8 @@ public class RRefreshView extends ViewGroup implements IRRefreshView {
 
     private void init(Context context, AttributeSet attrs, int defStyleAttr) {
         TypedArray a = context.obtainStyledAttributes(attrs, R.styleable.RRefreshView);
-        float width = a.getDimension(R.styleable.RRefreshView_rrv_heart_width, 35.0f);
-        float height = a.getDimension(R.styleable.RRefreshView_rrv_heart_height, 30.0f);
         a.recycle();
-        if (width > 0) {
-            heartViewWidth = (int) width;
-        }
-        if (height > 0) {
-            heartViewHeight = (int) height;
-        }
+
         mDecelerateInterpolator = new DecelerateInterpolator(DECELERATE_INTERPOLATION_FACTOR);
         mTouchSlop = ViewConfiguration.get(context).getScaledTouchSlop();
         mTotalDragDistance = Utils.convertDpToPixel(context, DRAG_MAX_DISTANCE);
@@ -150,6 +145,7 @@ public class RRefreshView extends ViewGroup implements IRRefreshView {
         mHeaderView = new ViewGroup(getContext()) {
             @Override
             protected void onLayout(boolean changed, int l, int t, int r, int b) {
+                startLoadingAnim();
                 Log.e(TAG, " HeaderView onLayout ====> ");
                 int height = getMeasuredHeight();
                 int width = getMeasuredWidth();
@@ -160,15 +156,17 @@ public class RRefreshView extends ViewGroup implements IRRefreshView {
                 if (mRefreshView != null) {
                     mRefreshView.setPercent(mCurrentDragPercent, false);
                     float dragPercent = Math.min(1f, Math.abs(mCurrentDragPercent));
-                    mRefreshView.layout((width - heartViewWidth) / 2,
-                            0,
-                            (width + heartViewWidth) / 2,
-                            (int) ((heartViewHeight) * dragPercent));
-                    Log.e(TAG, " mCurrentOffsetTop = " + mCurrentOffsetTop + " ,dragPercent = " + dragPercent);
+                    int refreshViewWidth = mRefreshView.getMeasuredWidth();
+                    int refreshViewHeight = mRefreshView.getMeasuredHeight();
+                    if (mRefreshView instanceof ViewGroup) {
+                        mRefreshView.performLayout(((width - refreshViewWidth) / 2), 0,
+                                ((width + refreshViewWidth) / 2), (int) (refreshViewHeight * dragPercent));
+                        Log.e(TAG, " mCurrentOffsetTop = " + mCurrentOffsetTop + " ,dragPercent = " + dragPercent + " mRefreshView.getHeight() = " + refreshViewHeight);
+                    }
                 }
             }
         };
-        setRefreshStyle(0);
+        setRefreshStyle(1);
 
         addView(mHeaderView);
 
@@ -176,36 +174,11 @@ public class RRefreshView extends ViewGroup implements IRRefreshView {
         ViewCompat.setChildrenDrawingOrderEnabled(this, true);
     }
 
-    public AnimationDrawable getAnimation(Context context, int animResId) {
-        Resources res = context.getResources();
-        AnimationDrawable animDraw = null;
-        try {
-            animDraw = (AnimationDrawable)
-                    AnimationDrawable.createFromXml(res, res.getAnimation(animResId));
-        } catch (XmlPullParserException | IOException e) {
-            /* TODO Auto-generated catch block */
-            e.printStackTrace();
-        }
-        return animDraw;
-    }
-
     public void setRefreshStyle(int type) {
         setRefreshing(false);
-//        switch (type) {
-//            case STYLE_SUN:
-        mRefreshView = new HeartRefreshView(getContext());
-        AnimationDrawable animDraw = getAnimation(getContext(), R.drawable.welove_refresh_header_anim);
-        if (animDraw != null) {
-            ((HeartRefreshView) mRefreshView).setAnimDrawable(animDraw);
-        }
-//                break;
-//            default:
-//                throw new InvalidParameterException("Type does not exist");
-//        }
-//        mHeaderView.setImageDrawable(mRefreshView);
-
-
+        mRefreshView = new WeloveHeader(getContext());
         mHeaderView.addView((View) mRefreshView);
+
     }
 
     /**
@@ -253,8 +226,6 @@ public class RRefreshView extends ViewGroup implements IRRefreshView {
 
         mTarget.layout(left, top + mCurrentOffsetTop, left + width - right, top + height - bottom + mCurrentOffsetTop);
         mHeaderView.layout(left, top, left + width - right, top + height - bottom);
-
-
     }
 
     private void ensureTarget() {
@@ -322,6 +293,15 @@ public class RRefreshView extends ViewGroup implements IRRefreshView {
         }
 
         return mIsBeingDragged;
+    }
+
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent ev) {
+        if (mRefreshing) {
+            return true;
+        }
+
+        return super.dispatchTouchEvent(ev);
     }
 
     private void onSecondaryPointerUp(MotionEvent ev) {
@@ -414,13 +394,14 @@ public class RRefreshView extends ViewGroup implements IRRefreshView {
 
 
     private void moveToStart(float interpolatedTime) {
+        stopLoadingAnim();
         int targetTop = mFrom - (int) (mFrom * interpolatedTime);
         float targetPercent = mFromDragPercent * (1.0f - interpolatedTime);
         int offset = targetTop - mTarget.getTop();
 
         mCurrentDragPercent = targetPercent;
         if (mRefreshView != null) {
-            mRefreshView.setPercent(mCurrentDragPercent, true);
+            mRefreshView.requestLayout();
         }
         mTarget.setPadding(mTargetPaddingLeft, mTargetPaddingTop, mTargetPaddingRight, mTargetPaddingBottom + targetTop);
         setTargetOffsetTop(offset, false);
@@ -472,14 +453,12 @@ public class RRefreshView extends ViewGroup implements IRRefreshView {
         mHeaderView.startAnimation(mAnimateToCorrectPosition);
 
         if (mRefreshing) {
-            startLoadingAnim();
             if (mNotify) {
                 if (mListener != null) {
                     mListener.onRefresh();
                 }
             }
         } else {
-            stopLoadingAnim();
             animateOffsetToStartPosition();
         }
         mCurrentOffsetTop = mTarget.getTop();
@@ -488,7 +467,7 @@ public class RRefreshView extends ViewGroup implements IRRefreshView {
 
     private void stopLoadingAnim() {
         if (mRefreshView != null) {
-            mRefreshView.stop();
+            mRefreshView.stop(false);
         }
     }
 
@@ -524,12 +503,6 @@ public class RRefreshView extends ViewGroup implements IRRefreshView {
         }
     }
 
-    @Override
-    public void setHeaderView(IPtrViewFactory ptrViewFactory) {
-//        mHeaderView = LayoutInflater.from(getContext()).inflate()
-    }
-
-
 
     @Override
     public void setNetworkStatus(int status) {
@@ -540,21 +513,13 @@ public class RRefreshView extends ViewGroup implements IRRefreshView {
         this.mListener = onRefreshListener;
     }
 
-
-    private boolean isLoadingMore = false;
-    private boolean isAutoLoadMoreEnable = true;
-    private boolean isLoadMoreEnable = false;
-    private boolean hasInitLoadMoreView = false;
-
-    private ILoadMoreViewFactory loadMoreViewFactory;
-    private ILoadMoreViewFactory.ILoadMoreView mLoadMoreView;
-
-    private LoadMoreHandler mLoadMoreHandler;
-
-    private View mContentView;
-
     public void setAutoLoadMoreEnable(boolean isAutoLoadMoreEnable) {
         this.isAutoLoadMoreEnable = isAutoLoadMoreEnable;
+    }
+
+    @Override
+    public void setHeaderView(IPtrViewFactory ptrViewFactory) {
+
     }
 
     @Override
@@ -562,9 +527,7 @@ public class RRefreshView extends ViewGroup implements IRRefreshView {
         if (null == factory || (null != loadMoreViewFactory && loadMoreViewFactory == factory)) {
             return;
         }
-
         loadMoreViewFactory = factory;
-
         if (hasInitLoadMoreView) {
             mLoadMoreHandler.removeFooter();
             mLoadMoreView = loadMoreViewFactory.createLoadMoreView();
@@ -574,7 +537,6 @@ public class RRefreshView extends ViewGroup implements IRRefreshView {
                 mLoadMoreHandler.removeFooter();
             }
         }
-
     }
 
 
@@ -639,26 +601,6 @@ public class RRefreshView extends ViewGroup implements IRRefreshView {
         return isLoadMoreEnable;
     }
 
-    private OnScrollBottomListener onScrollBottomListener = new OnScrollBottomListener() {
-        @Override
-        public void onScorllBootom() {
-            if (isAutoLoadMoreEnable && isLoadMoreEnable && !isLoadingMore()) {
-                // can check network here
-                loadMore();
-            }
-        }
-    };
-
-    private OnClickListener onClickLoadMoreListener = new OnClickListener() {
-
-        @Override
-        public void onClick(View v) {
-            if (isLoadMoreEnable && !isLoadingMore()) {
-                loadMore();
-            }
-        }
-    };
-
     void loadMore() {
         isLoadingMore = true;
         mLoadMoreView.showLoading();
@@ -690,4 +632,24 @@ public class RRefreshView extends ViewGroup implements IRRefreshView {
     public void setOnLoadMoreListener(OnLoadMoreListener loadMoreListener) {
         this.mOnLoadMoreListener = loadMoreListener;
     }
+
+    private OnScrollBottomListener onScrollBottomListener = new OnScrollBottomListener() {
+        @Override
+        public void onScorllBootom() {
+            if (isAutoLoadMoreEnable && isLoadMoreEnable && !isLoadingMore()) {
+                // can check network here
+                loadMore();
+            }
+        }
+    };
+
+    private OnClickListener onClickLoadMoreListener = new OnClickListener() {
+
+        @Override
+        public void onClick(View v) {
+            if (isLoadMoreEnable && !isLoadingMore()) {
+                loadMore();
+            }
+        }
+    };
 }

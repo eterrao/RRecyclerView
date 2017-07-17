@@ -11,9 +11,9 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.welove520.rrefresh.view.OnLoadMoreListener;
-import com.welove520.rrefresh.view.RRefreshView;
-import com.welove520.rrefresh.view.base.OnRefreshListener;
+import com.welove520.rrefresh.view.listener.OnLoadMoreListener;
+import com.welove520.rrefresh.view.base.RRefreshView;
+import com.welove520.rrefresh.view.listener.OnRefreshListener;
 import com.welove520.rrefresh.view.recyclerview.RecyclerAdapterWithHF;
 
 import java.util.ArrayList;
@@ -44,6 +44,7 @@ public class MainActivity extends AppCompatActivity {
         recyclerView.setAdapter(mAdapter);
 
         mPullToRefreshView = (RRefreshView) findViewById(R.id.pull_to_refresh);
+        mPullToRefreshView.setLoadMoreEnable(true);
         mPullToRefreshView.setOnRefreshListener(new OnRefreshListener() {
             @Override
             public void onRefresh() {
@@ -56,7 +57,6 @@ public class MainActivity extends AppCompatActivity {
                         }
                         mAdapter.notifyDataSetChanged();
                         mPullToRefreshView.setRefreshing(false);
-                        mPullToRefreshView.setLoadMoreEnable(true);
                     }
                 }, REFRESH_DELAY);
             }

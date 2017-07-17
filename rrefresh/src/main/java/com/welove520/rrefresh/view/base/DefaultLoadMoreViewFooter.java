@@ -21,7 +21,6 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.welove520.rrefresh.R;
-import com.welove520.rrefresh.view.ILoadMoreViewFactory;
 
 /**
  * default load more view
@@ -30,10 +29,10 @@ public class DefaultLoadMoreViewFooter implements ILoadMoreViewFactory {
 
     @Override
     public ILoadMoreView createLoadMoreView() {
-        return new LoadMoreHelper();
+        return new LoadMoreImpl();
     }
 
-    private class LoadMoreHelper implements ILoadMoreView {
+    private class LoadMoreImpl implements ILoadMoreView {
 
         protected View footerView;
         protected TextView footerTv;

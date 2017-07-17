@@ -1,6 +1,9 @@
-package com.welove520.rrefresh.view;
+package com.welove520.rrefresh.view.handler;
 
 import android.view.View;
+
+import com.welove520.rrefresh.view.base.ILoadMoreViewFactory;
+import com.welove520.rrefresh.view.listener.OnScrollBottomListener;
 
 /**
  * Created by Administrator on 2017/7/16.

@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="fill_parent"
+    android:layout_width="match_parent"
     android:layout_height="wrap_content">
 
     <RelativeLayout
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="70dp"
         android:layout_centerInParent="true">
 
@@ -13,14 +13,17 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_centerInParent="true"
+            android:text="@string/life_refres_single_feed_success"
             android:textColor="@color/header_text_color"
-            android:visibility="gone" />
+            android:textSize="14sp"
+            android:visibility="invisible" />
 
         <ImageView
             android:id="@+id/listview_header_arrow"
-            android:layout_width="30dp"
-            android:layout_height="25dp"
-            android:layout_centerInParent="true" />
+            android:layout_width="35dp"
+            android:layout_height="30dp"
+            android:layout_centerInParent="true"
+            android:src="@drawable/welove_refresh_header_anim" />
     </RelativeLayout>
 
 </RelativeLayout>

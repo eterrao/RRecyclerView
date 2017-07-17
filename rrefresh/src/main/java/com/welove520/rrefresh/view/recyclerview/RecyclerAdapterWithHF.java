@@ -11,8 +11,6 @@ import android.view.View.OnLongClickListener;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
-import com.welove520.rrefresh.view.SampleAdapter;
-
 import java.util.ArrayList;
 import java.util.List;
 

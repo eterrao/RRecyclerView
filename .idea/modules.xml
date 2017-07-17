@@ -3,10 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/RRecyclerView.iml" filepath="$PROJECT_DIR$/RRecyclerView.iml" />
-      <module fileurl="file://$PROJECT_DIR$/RRecyclerView.iml" filepath="$PROJECT_DIR$/RRecyclerView.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
-      <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
-      <module fileurl="file://$PROJECT_DIR$/rrefresh/rrefresh.iml" filepath="$PROJECT_DIR$/rrefresh/rrefresh.iml" />
       <module fileurl="file://$PROJECT_DIR$/rrefresh/rrefresh.iml" filepath="$PROJECT_DIR$/rrefresh/rrefresh.iml" />
     </modules>
   </component>

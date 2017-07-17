@@ -7,9 +7,8 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
 
-import com.welove520.rrefresh.view.ILoadMoreViewFactory;
-import com.welove520.rrefresh.view.LoadMoreHandler;
-import com.welove520.rrefresh.view.OnScrollBottomListener;
+import com.welove520.rrefresh.view.base.ILoadMoreViewFactory;
+import com.welove520.rrefresh.view.listener.OnScrollBottomListener;
 import com.welove520.rrefresh.view.recyclerview.RecyclerAdapterWithHF;
 
 public class RecyclerViewHandler implements LoadMoreHandler {
