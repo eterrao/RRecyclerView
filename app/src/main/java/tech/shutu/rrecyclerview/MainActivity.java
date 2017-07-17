@@ -55,6 +55,7 @@ public class MainActivity extends AppCompatActivity {
                         for (int i = 0; i < 17; i++) {
                             mData.add(new String("  RecyclerView item  -" + i));
                         }
+                        
                         mAdapter.notifyDataSetChanged();
                         mPullToRefreshView.setRefreshing(false);
                     }
