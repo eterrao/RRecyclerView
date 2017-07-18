@@ -15,10 +15,17 @@
             android:id="@+id/recycler_view"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:background="#123456"
+            android:background="#00000000"
             android:divider="@null"
             android:dividerHeight="0dp"
-            android:fadingEdge="none" />
+            android:fadingEdge="none"
+            android:visibility="gone" />
+
+
+        <ListView
+            android:id="@+id/lv_main"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
 
     </com.welove520.rrefresh.view.base.RRefreshView>
 </RelativeLayout>

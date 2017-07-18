@@ -8,6 +8,7 @@ import android.support.v4.view.ViewCompat;
 import android.support.v7.widget.RecyclerView;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
@@ -30,7 +31,9 @@ import com.welove520.rrefresh.view.handler.RecyclerViewHandler;
 import com.welove520.rrefresh.view.listener.OnLoadMoreListener;
 import com.welove520.rrefresh.view.listener.OnRefreshListener;
 import com.welove520.rrefresh.view.listener.OnScrollBottomListener;
-import com.welove520.rrefresh.view.network.NetworkStatusView;
+import com.welove520.rrefresh.view.network.DataStatusLayoutImpl;
+import com.welove520.rrefresh.view.network.NetworkStatusLayoutImpl;
+import com.welove520.rrefresh.view.network.StatusLayout;
 
 /**
  * Created by Raomengyang on 17-7-13.
@@ -39,7 +42,7 @@ import com.welove520.rrefresh.view.network.NetworkStatusView;
  * Version  : 1.0
  */
 
-public class RRefreshView extends RelativeLayout implements IRRefreshView, NetworkStatusView.NetworkNoticeListener {
+public class RRefreshView extends RelativeLayout implements IRRefreshView, StatusLayout.DataStatusLayout, StatusLayout.NetworkStatusLayout {
 
     private static final String TAG = RRefreshView.class.getSimpleName();
     private static final int MAX_OFFSET_ANIMATION_DURATION = 700;
@@ -47,37 +50,38 @@ public class RRefreshView extends RelativeLayout implements IRRefreshView, Netwo
     private static final int INVALID_POINTER = -1;
     private static final float DECELERATE_INTERPOLATION_FACTOR = 2f;
     private static final float DRAG_RATE = 0.5f;
-    OnLoadMoreListener mOnLoadMoreListener;
     private View mTarget;
     private RelativeLayout mHeaderView;
-    private ViewGroup mFooterView;
     private IHeaderView mRefreshView;
-    private NetworkStatusView networkStatusView;
+    private NetworkStatusLayout networkStatusView;
+    private DataStatusLayout dataStatusView;
     private Interpolator mDecelerateInterpolator;
     private int mTouchSlop;
     private int mTotalDragDistance;
-    private float mCurrentDragPercent;
     private int mCurrentOffsetTop;
-    private boolean mRefreshing;
     private int mActivePointerId;
-    private boolean mIsBeingDragged;
-    private float mInitialMotionY;
     private int mFrom;
-    private float mFromDragPercent;
-    private boolean mNotify;
-    private OnRefreshListener mListener;
     private int mTargetPaddingTop;
     private int mTargetPaddingBottom;
     private int mTargetPaddingRight;
     private int mTargetPaddingLeft;
+    private float mCurrentDragPercent;
+    private float mInitialMotionY;
+    private float mFromDragPercent;
+    private boolean mRefreshing;
+    private boolean mIsBeingDragged;
+    private boolean mNotify;
     private boolean isLoadingMore = false;
     private boolean isAutoLoadMoreEnable = false;
     private boolean isLoadMoreEnable = false;
     private boolean hasInitLoadMoreView = false;
+    private OnRefreshListener mListener;
+    private OnLoadMoreListener mOnLoadMoreListener;
     private ILoadMoreViewFactory loadMoreViewFactory;
     private ILoadMoreViewFactory.ILoadMoreView mLoadMoreView;
     private LoadMoreHandler mLoadMoreHandler;
     private View mContentView;
+
     private Animation mAnimateToStartPosition = new Animation() {
         @Override
         protected void applyTransformation(float interpolatedTime, Transformation t) {
@@ -157,29 +161,23 @@ public class RRefreshView extends RelativeLayout implements IRRefreshView, Netwo
         mTouchSlop = ViewConfiguration.get(context).getScaledTouchSlop();
         mTotalDragDistance = Utils.convertDpToPixel(context, DRAG_MAX_DISTANCE);
 
-        setRefreshStyle(1);
-
-        addView(mHeaderView, new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-
+        initView(context);
         setWillNotDraw(false);
         ViewCompat.setChildrenDrawingOrderEnabled(this, true);
 
-        networkStatusView = new NetworkStatusView(getContext());
-        networkStatusView.setOnNetworkStatusViewListener(new NetworkStatusView.OnNetworkStatusViewListener() {
-            @Override
-            public void onRetry() {
-                hide();
-            }
-        });
-
     }
 
-    public void setRefreshStyle(int type) {
+    public void initView(Context context) {
         setRefreshing(false);
         mHeaderView = new RelativeLayout(getContext());
         mRefreshView = new WeloveHeader(getContext());
         mHeaderView.addView((View) mRefreshView, new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 210));
+        addView(mHeaderView, new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
+        networkStatusView = new NetworkStatusLayoutImpl(getContext());
+        dataStatusView = new DataStatusLayoutImpl(getContext());
+        View container = LayoutInflater.from(context).inflate(R.layout.layout_data_status, null);
+        setDataStatusContainer(container);
     }
 
     /**
@@ -626,17 +624,39 @@ public class RRefreshView extends RelativeLayout implements IRRefreshView, Netwo
     }
 
     @Override
-    public void show(int status) {
+    public void showNetwork(int status) {
         if (networkStatusView != null) {
-            removeView(networkStatusView);
+            removeView((View) networkStatusView);
+            addView((View) networkStatusView);
+            networkStatusView.showNetwork(status);
         }
-        addView(networkStatusView);
     }
 
     @Override
-    public void hide() {
+    public void hideNetwork() {
         if (networkStatusView != null) {
-            removeView(networkStatusView);
+            networkStatusView.hideNetwork();
         }
+    }
+
+    @Override
+    public void showData(int status) {
+        if (dataStatusView != null) {
+            removeView((View) dataStatusView);
+            addView((View) dataStatusView, 0);
+            dataStatusView.showData(status);
+        }
+    }
+
+    @Override
+    public void hideData() {
+        if (dataStatusView != null) {
+            dataStatusView.hideData();
+        }
+    }
+
+    @Override
+    public void setDataStatusContainer(View container) {
+        dataStatusView.setDataStatusContainer(container);
     }
 }
