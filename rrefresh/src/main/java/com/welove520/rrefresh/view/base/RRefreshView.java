@@ -20,7 +20,6 @@ import android.view.animation.Transformation;
 import android.widget.AbsListView;
 import android.widget.GridView;
 import android.widget.ListView;
-import android.widget.RelativeLayout;
 
 import com.welove520.rrefresh.R;
 import com.welove520.rrefresh.view.Utils;
@@ -42,7 +41,7 @@ import com.welove520.rrefresh.view.network.StatusLayout;
  * Version  : 1.0
  */
 
-public class RRefreshView extends RelativeLayout implements IRRefreshView, StatusLayout.DataStatusLayout, StatusLayout.NetworkStatusLayout {
+public class RRefreshView extends ViewGroup implements IRRefreshView, StatusLayout.DataStatusLayout, StatusLayout.NetworkStatusLayout {
 
     private static final String TAG = RRefreshView.class.getSimpleName();
     private static final int MAX_OFFSET_ANIMATION_DURATION = 700;
@@ -51,7 +50,6 @@ public class RRefreshView extends RelativeLayout implements IRRefreshView, Statu
     private static final float DECELERATE_INTERPOLATION_FACTOR = 2f;
     private static final float DRAG_RATE = 0.5f;
     private View mTarget;
-    private RelativeLayout mHeaderView;
     private IHeaderView mRefreshView;
     private NetworkStatusLayout networkStatusView;
     private DataStatusLayout dataStatusView;
@@ -107,17 +105,7 @@ public class RRefreshView extends RelativeLayout implements IRRefreshView, Statu
     private Animation mAnimateToCorrectPosition = new Animation() {
         @Override
         protected void applyTransformation(float interpolatedTime, Transformation t) {
-            int targetTop;
-            int endTarget = mTotalDragDistance;
-            targetTop = (mFrom + (int) ((endTarget - mFrom) * interpolatedTime));
-            int offset = targetTop - mTarget.getTop();
-
-            mCurrentDragPercent = mFromDragPercent - (mFromDragPercent - 1.0f) * interpolatedTime;
-            if (mRefreshView != null) {
-                mRefreshView.setPercent(mCurrentDragPercent, false);
-            }
-
-            setTargetOffsetTop(offset, false /* requires update */);
+            moveToCorrect(interpolatedTime);
         }
     };
     private OnScrollBottomListener onScrollBottomListener = new OnScrollBottomListener() {
@@ -139,10 +127,10 @@ public class RRefreshView extends RelativeLayout implements IRRefreshView, Statu
         }
     };
 
-
     public RRefreshView(Context context) {
         this(context, null);
     }
+
 
     public RRefreshView(Context context, AttributeSet attrs) {
         this(context, attrs, 0);
@@ -151,6 +139,20 @@ public class RRefreshView extends RelativeLayout implements IRRefreshView, Statu
     public RRefreshView(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         init(context, attrs, defStyleAttr);
+    }
+
+    private void moveToCorrect(float interpolatedTime) {
+        int targetTop;
+        int endTarget = mTotalDragDistance;
+        targetTop = (mFrom + (int) ((endTarget - mFrom) * interpolatedTime));
+        int offset = targetTop - mTarget.getTop();
+
+        mCurrentDragPercent = mFromDragPercent - (mFromDragPercent - 1.0f) * interpolatedTime;
+        if (mRefreshView != null) {
+            mRefreshView.setPercent(mCurrentDragPercent, false);
+        }
+
+        setTargetOffsetTop(offset, false /* requires update */);
     }
 
     private void init(Context context, AttributeSet attrs, int defStyleAttr) {
@@ -169,10 +171,8 @@ public class RRefreshView extends RelativeLayout implements IRRefreshView, Statu
 
     public void initView(Context context) {
         setRefreshing(false);
-        mHeaderView = new RelativeLayout(getContext());
-        mRefreshView = new WeloveHeader(getContext());
-        mHeaderView.addView((View) mRefreshView, new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 210));
-        addView(mHeaderView, new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        mRefreshView = new WeloveHeader().createPtrView(getContext());
+        addView((View) mRefreshView);
 
         networkStatusView = new NetworkStatusLayoutImpl(getContext());
         dataStatusView = new DataStatusLayoutImpl(getContext());
@@ -184,7 +184,7 @@ public class RRefreshView extends RelativeLayout implements IRRefreshView, Statu
      * This method sets padding for the refresh (progress) view.
      */
     public void setRefreshViewPadding(int left, int top, int right, int bottom) {
-        mHeaderView.setPadding(left, top, right, bottom);
+        mRefreshView.setPadding(left, top, right, bottom);
     }
 
     public int getTotalDragDistance() {
@@ -203,12 +203,11 @@ public class RRefreshView extends RelativeLayout implements IRRefreshView, Statu
         widthMeasureSpec = MeasureSpec.makeMeasureSpec(getMeasuredWidth() - getPaddingLeft() - getPaddingRight(), MeasureSpec.EXACTLY);
         heightMeasureSpec = MeasureSpec.makeMeasureSpec(getMeasuredHeight() - getPaddingLeft() - getPaddingRight(), MeasureSpec.EXACTLY);
         mTarget.measure(widthMeasureSpec, heightMeasureSpec);
-        mHeaderView.measure(widthMeasureSpec, heightMeasureSpec);
+        mRefreshView.measure(widthMeasureSpec, heightMeasureSpec);
     }
 
     @Override
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
-        super.onLayout(changed, l, t, r, b);
         ensureTarget();
         if (mTarget == null) {
             return;
@@ -220,8 +219,10 @@ public class RRefreshView extends RelativeLayout implements IRRefreshView, Statu
         int top = getPaddingTop();
         int right = getPaddingRight();
         int bottom = getPaddingBottom();
+        float dragPercent = Math.min(1f, Math.abs(mCurrentDragPercent));
 
         mTarget.layout(left, top + mCurrentOffsetTop, left + width - right, top + height - bottom + mCurrentOffsetTop);
+        mRefreshView.performLayout(left, top, (int) ((left + width - right) * dragPercent), top + height - bottom);
         startLoadingAnim();
     }
 
@@ -232,7 +233,7 @@ public class RRefreshView extends RelativeLayout implements IRRefreshView, Statu
         if (getChildCount() > 0) {
             for (int i = 0; i < getChildCount(); i++) {
                 View child = getChildAt(i);
-                if (child != mHeaderView) {
+                if (child != mRefreshView) {
                     mTarget = child;
                     mTargetPaddingBottom = mTarget.getPaddingBottom();
                     mTargetPaddingTop = mTarget.getPaddingTop();
@@ -319,7 +320,6 @@ public class RRefreshView extends RelativeLayout implements IRRefreshView, Statu
 
     @Override
     public boolean onTouchEvent(@NonNull MotionEvent ev) {
-
         if (!mIsBeingDragged) {
             return super.onTouchEvent(ev);
         }
@@ -328,9 +328,7 @@ public class RRefreshView extends RelativeLayout implements IRRefreshView, Statu
 
         switch (action) {
             case MotionEvent.ACTION_MOVE: {
-                if (mRefreshView != null) {
-                    mRefreshView.requestLayout();
-                }
+                requestLayout();
                 final int pointerIndex = MotionEventCompat.findPointerIndex(ev, mActivePointerId);
                 if (pointerIndex < 0) {
                     return false;
@@ -433,8 +431,8 @@ public class RRefreshView extends RelativeLayout implements IRRefreshView, Statu
         mAnimateToStartPosition.setDuration(animationDuration);
         mAnimateToStartPosition.setInterpolator(mDecelerateInterpolator);
         mAnimateToStartPosition.setAnimationListener(mToStartListener);
-        mHeaderView.clearAnimation();
-        mHeaderView.startAnimation(mAnimateToStartPosition);
+        mRefreshView.clearAnimation();
+        mRefreshView.startAnimation(mAnimateToStartPosition);
     }
 
     private void animateOffsetToCorrectPosition() {
@@ -444,8 +442,8 @@ public class RRefreshView extends RelativeLayout implements IRRefreshView, Statu
         mAnimateToCorrectPosition.reset();
         mAnimateToCorrectPosition.setDuration(MAX_OFFSET_ANIMATION_DURATION);
         mAnimateToCorrectPosition.setInterpolator(mDecelerateInterpolator);
-        mHeaderView.clearAnimation();
-        mHeaderView.startAnimation(mAnimateToCorrectPosition);
+        mRefreshView.clearAnimation();
+        mRefreshView.startAnimation(mAnimateToCorrectPosition);
 
         if (mRefreshing) {
             if (mNotify) {
@@ -512,7 +510,13 @@ public class RRefreshView extends RelativeLayout implements IRRefreshView, Statu
 
     @Override
     public void setHeaderView(IPtrViewFactory ptrViewFactory) {
-
+        if (null == ptrViewFactory) return;
+        if (mRefreshView != null) {
+            removeView((View) mRefreshView);
+            mRefreshView = null;
+        }
+        mRefreshView = ptrViewFactory.createPtrView(getContext());
+        addView((View) mRefreshView);
     }
 
     @Override

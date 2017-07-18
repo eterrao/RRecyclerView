@@ -8,13 +8,13 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
 import android.widget.BaseAdapter;
-import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.welove520.rrefresh.view.base.IPtrViewFactory;
 import com.welove520.rrefresh.view.base.RRefreshView;
+import com.welove520.rrefresh.view.base.WeloveHeader;
 import com.welove520.rrefresh.view.listener.OnLoadMoreListener;
 import com.welove520.rrefresh.view.listener.OnRefreshListener;
 import com.welove520.rrefresh.view.network.StatusLayout;
@@ -36,11 +36,10 @@ public class MainActivity extends AppCompatActivity {
     @BindView(R.id.recycler_view)
     RecyclerView recyclerView;
     @BindView(R.id.pull_to_refresh)
-    RRefreshView pullToRefresh;
-    @BindView(R.id.lv_main)
-    ListView lvMain;
+    RRefreshView mPullToRefreshView;
+//    @BindView(R.id.lv_main)
+//    ListView lvMain;
 
-    private RRefreshView mPullToRefreshView;
     private RecyclerAdapter adapter;
     private RecyclerAdapterWithHF mAdapter;
 
@@ -70,16 +69,15 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
+        mPullToRefreshView.setHeaderView(new WeloveHeader());
 
-        lvMain.setAdapter(mListAdapter);
-        lvMain.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                Toast.makeText(MainActivity.this, "position clicked : " + position, Toast.LENGTH_SHORT).show();
-            }
-        });
-        mPullToRefreshView = (RRefreshView) findViewById(R.id.pull_to_refresh);
-        mPullToRefreshView.setLoadMoreEnable(true);
+//        lvMain.setAdapter(mListAdapter);
+//        lvMain.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+//            @Override
+//            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+//                Toast.makeText(MainActivity.this, "position clicked : " + position, Toast.LENGTH_SHORT).show();
+//            }
+//        });
         mPullToRefreshView.setAutoLoadMoreEnable(true);
         mPullToRefreshView.setOnRefreshListener(new OnRefreshListener() {
             @Override
@@ -95,6 +93,7 @@ public class MainActivity extends AppCompatActivity {
                         mAdapter.notifyDataSetChanged();
                         mListAdapter.notifyDataSetChanged();
                         mPullToRefreshView.setRefreshing(false);
+                        mPullToRefreshView.setLoadMoreEnable(true);
                         mPullToRefreshView.showData(StatusLayout.DataStatusLayout.STATUS_EMPTY);
                     }
                 }, REFRESH_DELAY);

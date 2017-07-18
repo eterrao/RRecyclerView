@@ -19,13 +19,7 @@
             android:divider="@null"
             android:dividerHeight="0dp"
             android:fadingEdge="none"
-            android:visibility="gone" />
-
-
-        <ListView
-            android:id="@+id/lv_main"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent" />
+            android:visibility="visible" />
 
     </com.welove520.rrefresh.view.base.RRefreshView>
 </RelativeLayout>

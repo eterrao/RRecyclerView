@@ -4,14 +4,18 @@
     android:layout_height="40dp"
     android:gravity="center_horizontal">
 
+
     <ProgressBar
         android:id="@+id/loadmore_default_footer_progressbar"
-        style="?android:attr/progressBarStyleSmallInverse"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="18dp"
+        android:layout_height="18dp"
         android:layout_gravity="center"
         android:layout_marginRight="15dp"
-        android:visibility="gone" />
+        android:background="@drawable/simple_progress_item_small_background"
+        android:indeterminate="false"
+        android:indeterminateDrawable="@drawable/welove_progress_small_indeterminate"
+        android:padding="2dp"
+        android:scaleType="fitXY" />
 
     <TextView
         android:id="@+id/loadmore_default_footer_tv"

@@ -1,5 +1,7 @@
 package com.welove520.rrefresh.view.base;
 
+import android.content.Context;
+
 /**
  * Created by Raomengyang on 17-7-14.
  * Email    : ericrao@welove-inc.com
@@ -9,9 +11,9 @@ package com.welove520.rrefresh.view.base;
 
 public interface IPtrViewFactory {
 
-    IPtrView createPtrView();
+    IPtrView createPtrView(Context context);
 
-    interface IPtrView {
+    interface IPtrView extends IHeaderView {
         void showPTRNormal();
 
         void showPTRFailed();
