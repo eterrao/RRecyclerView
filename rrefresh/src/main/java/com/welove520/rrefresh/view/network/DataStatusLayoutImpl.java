@@ -31,7 +31,7 @@ public class DataStatusLayoutImpl extends RelativeLayout implements StatusLayout
     }
 
     private void initView(Context context) {
-
+        // TODO: 17-7-19 是否需要默认的状态
     }
 
     @Override

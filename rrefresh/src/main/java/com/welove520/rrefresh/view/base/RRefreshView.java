@@ -49,11 +49,7 @@ public class RRefreshView extends ViewGroup implements IRRefreshView, StatusLayo
     private static final int INVALID_POINTER = -1;
     private static final float DECELERATE_INTERPOLATION_FACTOR = 2f;
     private static final float DRAG_RATE = 0.5f;
-    private View mTarget;
-    private IHeaderView mRefreshView;
-    private NetworkStatusLayout networkStatusView;
-    private DataStatusLayout dataStatusView;
-    private Interpolator mDecelerateInterpolator;
+
     private int mTouchSlop;
     private int mTotalDragDistance;
     private int mCurrentOffsetTop;
@@ -73,12 +69,17 @@ public class RRefreshView extends ViewGroup implements IRRefreshView, StatusLayo
     private boolean isAutoLoadMoreEnable = false;
     private boolean isLoadMoreEnable = false;
     private boolean hasInitLoadMoreView = false;
+    private View mTarget;
+    private View mContentView;
+    private IHeaderView mRefreshView;
+    private ILoadMoreViewFactory.ILoadMoreView mLoadMoreView;
+    private ILoadMoreViewFactory loadMoreViewFactory;
+    private NetworkStatusLayout networkStatusView;
+    private DataStatusLayout dataStatusView;
+    private Interpolator mDecelerateInterpolator;
     private OnRefreshListener mListener;
     private OnLoadMoreListener mOnLoadMoreListener;
-    private ILoadMoreViewFactory loadMoreViewFactory;
-    private ILoadMoreViewFactory.ILoadMoreView mLoadMoreView;
     private LoadMoreHandler mLoadMoreHandler;
-    private View mContentView;
 
     private Animation mAnimateToStartPosition = new Animation() {
         @Override
@@ -86,6 +87,7 @@ public class RRefreshView extends ViewGroup implements IRRefreshView, StatusLayo
             moveToStart(interpolatedTime);
         }
     };
+
     private Animation.AnimationListener mToStartListener = new Animation.AnimationListener() {
         @Override
         public void onAnimationStart(Animation animation) {
@@ -102,12 +104,14 @@ public class RRefreshView extends ViewGroup implements IRRefreshView, StatusLayo
             mCurrentOffsetTop = mTarget.getTop();
         }
     };
+
     private Animation mAnimateToCorrectPosition = new Animation() {
         @Override
         protected void applyTransformation(float interpolatedTime, Transformation t) {
             moveToCorrect(interpolatedTime);
         }
     };
+
     private OnScrollBottomListener onScrollBottomListener = new OnScrollBottomListener() {
         @Override
         public void onScorllBootom() {
@@ -117,6 +121,7 @@ public class RRefreshView extends ViewGroup implements IRRefreshView, StatusLayo
             }
         }
     };
+
     private OnClickListener onClickLoadMoreListener = new OnClickListener() {
 
         @Override
@@ -139,20 +144,6 @@ public class RRefreshView extends ViewGroup implements IRRefreshView, StatusLayo
     public RRefreshView(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         init(context, attrs, defStyleAttr);
-    }
-
-    private void moveToCorrect(float interpolatedTime) {
-        int targetTop;
-        int endTarget = mTotalDragDistance;
-        targetTop = (mFrom + (int) ((endTarget - mFrom) * interpolatedTime));
-        int offset = targetTop - mTarget.getTop();
-
-        mCurrentDragPercent = mFromDragPercent - (mFromDragPercent - 1.0f) * interpolatedTime;
-        if (mRefreshView != null) {
-            mRefreshView.setPercent(mCurrentDragPercent, false);
-        }
-
-        setTargetOffsetTop(offset, false /* requires update */);
     }
 
     private void init(Context context, AttributeSet attrs, int defStyleAttr) {
@@ -400,6 +391,19 @@ public class RRefreshView extends ViewGroup implements IRRefreshView, StatusLayo
         setTargetOffsetTop(offset, false);
     }
 
+    private void moveToCorrect(float interpolatedTime) {
+        int targetTop;
+        int endTarget = mTotalDragDistance;
+        targetTop = (mFrom + (int) ((endTarget - mFrom) * interpolatedTime));
+        int offset = targetTop - mTarget.getTop();
+
+        mCurrentDragPercent = mFromDragPercent - (mFromDragPercent - 1.0f) * interpolatedTime;
+        if (mRefreshView != null) {
+            mRefreshView.setPercent(mCurrentDragPercent, false);
+        }
+        setTargetOffsetTop(offset, false /* requires update */);
+    }
+
     public void setRefreshing(boolean refreshing) {
         if (mRefreshing != refreshing) {
             setRefreshing(refreshing, false /* notify */);
@@ -458,17 +462,17 @@ public class RRefreshView extends ViewGroup implements IRRefreshView, StatusLayo
         mTarget.setPadding(mTargetPaddingLeft, mTargetPaddingTop, mTargetPaddingRight, mTotalDragDistance);
     }
 
-    private void stopLoadingAnim() {
-        if (mRefreshView != null) {
-            mRefreshView.stop(false);
-        }
-    }
-
     private void startLoadingAnim() {
         if (mRefreshView != null) {
             if (!mRefreshView.isRunning()) {
                 mRefreshView.start();
             }
+        }
+    }
+
+    private void stopLoadingAnim() {
+        if (mRefreshView != null) {
+            mRefreshView.stop(false);
         }
     }
 
@@ -567,7 +571,6 @@ public class RRefreshView extends ViewGroup implements IRRefreshView, StatusLayo
                 loadMoreViewFactory = new DefaultLoadMoreViewFooter();
             }
             mLoadMoreView = loadMoreViewFactory.createLoadMoreView();
-
             if (null == mLoadMoreHandler) {
                 if (mContentView instanceof GridView) {
                     mLoadMoreHandler = new GridViewHandler();
@@ -587,7 +590,6 @@ public class RRefreshView extends ViewGroup implements IRRefreshView, StatusLayo
             mLoadMoreHandler.setOnScrollBottomListener(mContentView, onScrollBottomListener);
             return;
         }
-
         if (hasInitLoadMoreView) {
             if (isLoadMoreEnable) {
                 mLoadMoreHandler.addFooter();
@@ -661,6 +663,9 @@ public class RRefreshView extends ViewGroup implements IRRefreshView, StatusLayo
 
     @Override
     public void setDataStatusContainer(View container) {
-        dataStatusView.setDataStatusContainer(container);
+        if (container == null) return;
+        if (dataStatusView != null) {
+            dataStatusView.setDataStatusContainer(container);
+        }
     }
 }
