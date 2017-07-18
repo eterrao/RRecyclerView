@@ -52,7 +52,7 @@ public class WeloveHeader extends LinearLayout implements IHeaderView {
         this.setLayoutParams(lp);
         this.setPadding(0, 0, 0, 0);
 
-        addView(mContainer, new LayoutParams(LayoutParams.MATCH_PARENT, 0));
+        addView(mContainer, new LayoutParams(LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         setGravity(Gravity.TOP);
 
         mArrowImageView = (ImageView) findViewById(R.id.listview_header_arrow);

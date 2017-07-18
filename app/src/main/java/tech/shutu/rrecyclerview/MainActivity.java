@@ -11,19 +11,21 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.welove520.rrefresh.view.listener.OnLoadMoreListener;
 import com.welove520.rrefresh.view.base.RRefreshView;
+import com.welove520.rrefresh.view.listener.OnLoadMoreListener;
 import com.welove520.rrefresh.view.listener.OnRefreshListener;
 import com.welove520.rrefresh.view.recyclerview.RecyclerAdapterWithHF;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.welove520.rrefresh.view.network.NetworkStatusView.NetworkNoticeListener.STATE_ERROR;
+
 public class MainActivity extends AppCompatActivity {
 
     public static final int REFRESH_DELAY = 2000;
     public static final String KEY_ICON = "icon";
-    
+
     public static final String KEY_COLOR = "color";
 
     private RRefreshView mPullToRefreshView;
@@ -42,6 +44,12 @@ public class MainActivity extends AppCompatActivity {
         adapter = new RecyclerAdapter(this, mData);
         mAdapter = new RecyclerAdapterWithHF(adapter);
         recyclerView.setAdapter(mAdapter);
+        adapter.setListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mPullToRefreshView.show(STATE_ERROR);
+            }
+        });
 
         mPullToRefreshView = (RRefreshView) findViewById(R.id.pull_to_refresh);
         mPullToRefreshView.setLoadMoreEnable(true);
@@ -55,7 +63,7 @@ public class MainActivity extends AppCompatActivity {
                         for (int i = 0; i < 17; i++) {
                             mData.add(new String("  RecyclerView item  -" + i));
                         }
-                        
+
                         mAdapter.notifyDataSetChanged();
                         mPullToRefreshView.setRefreshing(false);
                     }
@@ -82,6 +90,7 @@ public class MainActivity extends AppCompatActivity {
 
 
     public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+        View.OnClickListener listener;
         private List<String> datas;
         private LayoutInflater inflater;
 
@@ -100,6 +109,14 @@ public class MainActivity extends AppCompatActivity {
         public void onBindViewHolder(RecyclerView.ViewHolder viewHolder, int position) {
             ChildViewHolder holder = (ChildViewHolder) viewHolder;
             holder.itemTv.setText(datas.get(position));
+            holder.itemTv.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if (listener != null) {
+                        listener.onClick(v);
+                    }
+                }
+            });
         }
 
         @Override
@@ -108,6 +125,9 @@ public class MainActivity extends AppCompatActivity {
             return new ChildViewHolder(view);
         }
 
+        public void setListener(View.OnClickListener listener) {
+            this.listener = listener;
+        }
     }
 
     public class ChildViewHolder extends RecyclerView.ViewHolder {
